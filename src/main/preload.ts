@@ -2,10 +2,37 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
+  saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
   saveProject: (projectPath: string, data: unknown) =>
     ipcRenderer.invoke('project:save', { projectPath, data }),
   loadProject: (projectPath: string) =>
     ipcRenderer.invoke('project:load', projectPath),
+  onMenuOpenDirectory: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu:open-directory', listener);
+    return () => ipcRenderer.removeListener('menu:open-directory', listener);
+  },
+  onMenuOpenProject: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu:open-project', listener);
+    return () => ipcRenderer.removeListener('menu:open-project', listener);
+  },
+  onMenuSaveProject: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu:save-project', listener);
+    return () => ipcRenderer.removeListener('menu:save-project', listener);
+  },
+  onMenuExport: (callback: () => void) => {
+    const listener = () => callback();
+    ipcRenderer.on('menu:export', listener);
+    return () => ipcRenderer.removeListener('menu:export', listener);
+  },
+  onMenuSetSize: (callback: (size: '5' | '6') => void) => {
+    const listener = (_event: unknown, size: '5' | '6') => callback(size);
+    ipcRenderer.on('menu:set-size', listener);
+    return () => ipcRenderer.removeListener('menu:set-size', listener);
+  },
 };
 
 contextBridge.exposeInMainWorld('imgstamp', api);

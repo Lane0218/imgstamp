@@ -1,8 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './index.css';
+
+type ProjectData = {
+  version: string;
+  name: string;
+  photos: unknown[];
+};
 
 export function App() {
   const [columns, setColumns] = useState(2);
+  const [statusMessage, setStatusMessage] = useState('就绪');
+  const [projectPath, setProjectPath] = useState<string | null>(null);
+  const [projectData, setProjectData] = useState<ProjectData>({
+    version: '1.0',
+    name: '未命名项目',
+    photos: [],
+  });
+  const [exportSize, setExportSize] = useState<'5' | '6'>('5');
   const thumbnails = [
     { id: 1, name: 'IMG_0001.JPG', status: '完整' },
     { id: 2, name: 'IMG_0002.JPG', status: '缺失' },
@@ -11,6 +25,83 @@ export function App() {
     { id: 5, name: 'IMG_0005.JPG', status: '完整' },
     { id: 6, name: 'IMG_0006.JPG', status: '完整' },
   ];
+
+  const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
+
+  useEffect(() => {
+    if (!window.imgstamp) {
+      return;
+    }
+
+    const handleOpenDirectory = async () => {
+      try {
+        const dir = await window.imgstamp.openDirectory();
+        if (dir) {
+          setStatusMessage(`已选择目录: ${dir}`);
+        }
+      } catch (error) {
+        setStatusMessage('打开文件夹失败');
+        console.error(error);
+      }
+    };
+
+    const handleOpenProject = async () => {
+      try {
+        const path = await window.imgstamp.openProjectFile();
+        if (!path) {
+          return;
+        }
+        const data = await window.imgstamp.loadProject(path);
+        setProjectPath(path);
+        setProjectData(data as ProjectData);
+        setStatusMessage(`已打开项目: ${path}`);
+      } catch (error) {
+        setStatusMessage('打开项目失败');
+        console.error(error);
+      }
+    };
+
+    const handleSaveProject = async () => {
+      try {
+        let targetPath = projectPath;
+        if (!targetPath) {
+          targetPath = await window.imgstamp.saveProjectFile();
+        }
+        if (!targetPath) {
+          return;
+        }
+        await window.imgstamp.saveProject(targetPath, projectData);
+        setProjectPath(targetPath);
+        setStatusMessage(`已保存项目: ${targetPath}`);
+      } catch (error) {
+        setStatusMessage('保存项目失败');
+        console.error(error);
+      }
+    };
+
+    const handleExport = () => {
+      setStatusMessage('导出流程暂未实现');
+    };
+
+    const handleSetSize = (size: '5' | '6') => {
+      setExportSize(size);
+      setStatusMessage(`已切换导出尺寸: ${size} 寸`);
+    };
+
+    const unsubOpenDirectory = window.imgstamp.onMenuOpenDirectory(handleOpenDirectory);
+    const unsubOpenProject = window.imgstamp.onMenuOpenProject(handleOpenProject);
+    const unsubSaveProject = window.imgstamp.onMenuSaveProject(handleSaveProject);
+    const unsubExport = window.imgstamp.onMenuExport(handleExport);
+    const unsubSetSize = window.imgstamp.onMenuSetSize(handleSetSize);
+
+    return () => {
+      unsubOpenDirectory();
+      unsubOpenProject();
+      unsubSaveProject();
+      unsubExport();
+      unsubSetSize();
+    };
+  }, [projectData, projectPath]);
 
   return (
     <div className="app">
@@ -43,6 +134,7 @@ export function App() {
             <span>总计: 200 张</span>
             <span>已选: 120 张</span>
             <span>待完善: 18 张</span>
+            <span>尺寸: {exportSize} 寸</span>
           </div>
 
           <div className="thumb-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
@@ -134,7 +226,7 @@ export function App() {
 
       <footer className="status-bar">
         <div>总计: 200 张 | 已选: 120 张 | 待完善: 18 张</div>
-        <div>就绪</div>
+        <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
       </footer>
     </div>
   );

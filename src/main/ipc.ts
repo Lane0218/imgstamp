@@ -30,6 +30,32 @@ export function registerIpcHandlers(): void {
     return result.filePaths[0];
   });
 
+  ipcMain.handle('dialog:openProjectFile', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: '项目文件', extensions: ['json'] }],
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle('dialog:saveProjectFile', async () => {
+    const result = await dialog.showSaveDialog({
+      filters: [{ name: '项目文件', extensions: ['json'] }],
+      defaultPath: 'project.json',
+    });
+
+    if (result.canceled || !result.filePath) {
+      return null;
+    }
+
+    return result.filePath;
+  });
+
   ipcMain.handle('project:save', async (_event, payload: SaveProjectPayload) => {
     if (!payload?.projectPath) {
       throw new Error('projectPath 不能为空');
