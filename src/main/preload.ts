@@ -1,1 +1,11 @@
-// 预留：在此暴露安全的 IPC API 给渲染进程
+import { contextBridge, ipcRenderer } from 'electron';
+
+const api = {
+  openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  saveProject: (projectPath: string, data: unknown) =>
+    ipcRenderer.invoke('project:save', { projectPath, data }),
+  loadProject: (projectPath: string) =>
+    ipcRenderer.invoke('project:load', projectPath),
+};
+
+contextBridge.exposeInMainWorld('imgstamp', api);
