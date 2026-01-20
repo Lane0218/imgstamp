@@ -183,11 +183,14 @@ select {
 
 .thumb-card--active {
   border-color: #2563eb;
-  box-shadow: 0 0 0 1px #2563eb;
+  box-shadow: 0 0 0 2px #2563eb;
+  background: #eaf2ff;
 }
 
 .thumb-card--multi {
   border-color: #bfdbfe;
+  box-shadow: 0 0 0 2px #bfdbfe;
+  background: #f2f7ff;
 }
 
 .thumb-image {
