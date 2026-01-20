@@ -168,13 +168,33 @@ select {
   background: #fafafa;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+}
+
+.thumb-card:focus-visible {
+  outline: 2px solid #94a3b8;
+  outline-offset: 2px;
+}
+
+.thumb-card--active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
 }
 
 .thumb-image {
   width: 100%;
   height: 90px;
   border-radius: 6px;
+  overflow: hidden;
   background: linear-gradient(135deg, #d1d5db, #f3f4f6);
+}
+
+.thumb-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .thumb-name {
@@ -209,6 +229,10 @@ select {
 
 .thumb-status-dot--warn {
   background: #f59e0b;
+}
+
+.thumb-status-dot--hidden {
+  opacity: 0;
 }
 
 .preview-area {

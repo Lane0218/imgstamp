@@ -5,6 +5,14 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 type ImgStampApi = {
   openDirectory: () => Promise<string | null>;
+  scanImages: (baseDir: string) => Promise<
+    Array<{
+      id: string;
+      filename: string;
+      relativePath: string;
+      fileUrl: string;
+    }>
+  >;
   openProjectFile: () => Promise<string | null>;
   saveProjectFile: () => Promise<string | null>;
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;

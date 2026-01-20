@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  scanImages: (baseDir: string) => ipcRenderer.invoke('image:scan', baseDir),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
   saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
   saveProject: (projectPath: string, data: unknown) =>

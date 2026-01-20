@@ -1,30 +1,43 @@
 import { useEffect, useMemo, useState } from 'react';
 import './index.css';
 
+type PhotoMeta = {
+  date: string | null;
+  location: string;
+  description: string;
+};
+
+type PhotoItem = {
+  id: string;
+  filename: string;
+  relativePath: string;
+  fileUrl: string;
+  selected: boolean;
+  meta: PhotoMeta;
+};
+
 type ProjectData = {
   version: string;
   name: string;
-  photos: unknown[];
+  baseDir: string | null;
+  photos: Array<{
+    id: string;
+    filename: string;
+    relativePath: string;
+    selected: boolean;
+    meta: PhotoMeta;
+  }>;
 };
 
 export function App() {
   const [columns, setColumns] = useState(2);
   const [statusMessage, setStatusMessage] = useState('就绪');
   const [projectPath, setProjectPath] = useState<string | null>(null);
-  const [projectData, setProjectData] = useState<ProjectData>({
-    version: '1.0',
-    name: '未命名项目',
-    photos: [],
-  });
+  const [projectName, setProjectName] = useState('未命名项目');
+  const [baseDir, setBaseDir] = useState<string | null>(null);
   const [exportSize, setExportSize] = useState<'5' | '6'>('5');
-  const thumbnails = [
-    { id: 1, name: 'IMG_0001.JPG', status: '完整' },
-    { id: 2, name: 'IMG_0002.JPG', status: '缺失' },
-    { id: 3, name: 'IMG_0003.JPG', status: '完整' },
-    { id: 4, name: 'IMG_0004.JPG', status: '缺失' },
-    { id: 5, name: 'IMG_0005.JPG', status: '完整' },
-    { id: 6, name: 'IMG_0006.JPG', status: '完整' },
-  ];
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [currentPhotoId, setCurrentPhotoId] = useState<string | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
 
@@ -33,11 +46,32 @@ export function App() {
       return;
     }
 
+    const toPhotoItem = (item: {
+      id: string;
+      filename: string;
+      relativePath: string;
+      fileUrl: string;
+    }): PhotoItem => ({
+      ...item,
+      selected: true,
+      meta: {
+        date: null,
+        location: '',
+        description: '',
+      },
+    });
+
     const handleOpenDirectory = async () => {
       try {
         const dir = await window.imgstamp.openDirectory();
         if (dir) {
-          setStatusMessage(`已选择目录: ${dir}`);
+          const scanned = await window.imgstamp.scanImages(dir);
+          const nextPhotos = scanned.map(toPhotoItem);
+          setPhotos(nextPhotos);
+          setCurrentPhotoId(nextPhotos[0]?.id ?? null);
+          setBaseDir(dir);
+          setProjectPath(null);
+          setStatusMessage(`已导入目录: ${dir}`);
         }
       } catch (error) {
         setStatusMessage('打开文件夹失败');
@@ -52,9 +86,27 @@ export function App() {
           return;
         }
         const data = await window.imgstamp.loadProject(path);
-        setProjectPath(path);
-        setProjectData(data as ProjectData);
-        setStatusMessage(`已打开项目: ${path}`);
+        const project = data as ProjectData;
+        if (project?.baseDir) {
+          const scanned = await window.imgstamp.scanImages(project.baseDir);
+          const metaMap = new Map(project.photos.map((photo) => [photo.relativePath, photo]));
+          const merged = scanned.map((item) => {
+            const saved = metaMap.get(item.relativePath);
+            return {
+              ...item,
+              selected: saved?.selected ?? true,
+              meta: saved?.meta ?? { date: null, location: '', description: '' },
+            };
+          });
+          setPhotos(merged);
+          setCurrentPhotoId(merged[0]?.id ?? null);
+          setBaseDir(project.baseDir);
+          setProjectName(project.name || '未命名项目');
+          setProjectPath(path);
+          setStatusMessage(`已打开项目: ${path}`);
+        } else {
+          setStatusMessage('项目缺少基础目录');
+        }
       } catch (error) {
         setStatusMessage('打开项目失败');
         console.error(error);
@@ -70,7 +122,19 @@ export function App() {
         if (!targetPath) {
           return;
         }
-        await window.imgstamp.saveProject(targetPath, projectData);
+        const projectToSave: ProjectData = {
+          version: '1.0',
+          name: projectName,
+          baseDir,
+          photos: photos.map((photo) => ({
+            id: photo.id,
+            filename: photo.filename,
+            relativePath: photo.relativePath,
+            selected: photo.selected,
+            meta: photo.meta,
+          })),
+        };
+        await window.imgstamp.saveProject(targetPath, projectToSave);
         setProjectPath(targetPath);
         setStatusMessage(`已保存项目: ${targetPath}`);
       } catch (error) {
@@ -101,7 +165,13 @@ export function App() {
       unsubExport();
       unsubSetSize();
     };
-  }, [projectData, projectPath]);
+  }, [projectPath, projectName, baseDir, photos]);
+
+  const selectedPhotos = photos.filter((photo) => photo.selected);
+  const incompleteCount = selectedPhotos.filter(
+    (photo) => !photo.meta.date || !photo.meta.location || !photo.meta.description,
+  ).length;
+  const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
 
   return (
     <div className="app">
@@ -131,24 +201,35 @@ export function App() {
           </div>
 
           <div className="stats">
-            <span>总计: 200 张</span>
-            <span>已选: 120 张</span>
-            <span>待完善: 18 张</span>
+            <span>总计: {photos.length} 张</span>
+            <span>已选: {selectedPhotos.length} 张</span>
+            <span>待完善: {incompleteCount} 张</span>
             <span>尺寸: {exportSize} 寸</span>
           </div>
 
           <div className="thumb-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-            {thumbnails.map((item) => (
-              <div className="thumb-card" key={item.id}>
-                <div
-                  className={`thumb-status-dot ${
-                    item.status === '完整' ? 'thumb-status-dot--ok' : 'thumb-status-dot--warn'
-                  }`}
-                />
-                <div className="thumb-image" />
-                <div className="thumb-name">{item.name}</div>
-              </div>
-            ))}
+            {photos.map((item) => {
+              const isComplete = Boolean(item.meta.date && item.meta.location && item.meta.description);
+              const dotClass = item.selected
+                ? isComplete
+                  ? 'thumb-status-dot--ok'
+                  : 'thumb-status-dot--warn'
+                : 'thumb-status-dot--hidden';
+              return (
+                <button
+                  type="button"
+                  className={`thumb-card ${item.id === currentPhotoId ? 'thumb-card--active' : ''}`}
+                  key={item.id}
+                  onClick={() => setCurrentPhotoId(item.id)}
+                >
+                  <div className={`thumb-status-dot ${dotClass}`} />
+                  <div className="thumb-image">
+                    <img src={item.fileUrl} alt={item.filename} loading="lazy" />
+                  </div>
+                  <div className="thumb-name">{item.filename}</div>
+                </button>
+              );
+            })}
           </div>
         </aside>
 
@@ -195,8 +276,8 @@ export function App() {
             </div>
           </div>
           <div className="meta">
-            <div className="meta__title">IMG_0001.JPG</div>
-            <div className="meta__sub">已选中 1 张图片</div>
+            <div className="meta__title">{currentPhoto?.filename ?? '未选择图片'}</div>
+            <div className="meta__sub">已选中 {selectedPhotos.length} 张图片</div>
           </div>
           <div className="form">
             <label className="field">
@@ -225,7 +306,9 @@ export function App() {
       </div>
 
       <footer className="status-bar">
-        <div>总计: 200 张 | 已选: 120 张 | 待完善: 18 张</div>
+        <div>
+          总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
+        </div>
         <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
       </footer>
     </div>
