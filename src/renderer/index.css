@@ -250,14 +250,11 @@ select {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
-  border: 1px solid #cbd5f5;
-  background: rgba(255, 255, 255, 0.9);
-  color: #2563eb;
-  font-size: 14px;
-  line-height: 20px;
+  border: 1px solid #93c5fd;
+  background: rgba(147, 197, 253, 0.15);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -265,9 +262,8 @@ select {
 }
 
 .thumb-select.is-selected {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
+  background: #93c5fd;
+  border-color: #93c5fd;
 }
 
 .preview-area {

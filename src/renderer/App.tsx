@@ -98,7 +98,7 @@ export function App() {
       fileUrl: string;
     }): PhotoItem => ({
       ...item,
-      selected: true,
+      selected: false,
       meta: {
         date: null,
         location: '',
@@ -591,9 +591,7 @@ export function App() {
                     }}
                     aria-label={item.selected ? '取消选择' : '加入导出'}
                     title={item.selected ? '取消选择' : '加入导出'}
-                  >
-                    {item.selected ? '✓' : ''}
-                  </button>
+                  />
                 </button>
               );
             })}
