@@ -198,7 +198,7 @@ export function registerIpcHandlers(): void {
 
       try {
         const buffer = await sharp(sourcePath)
-          .resize(safeSize, safeSize, { fit: 'cover' })
+          .resize(safeSize, safeSize, { fit: 'contain', background: '#ffffff' })
           .jpeg({ quality: 80 })
           .toBuffer();
         await fs.writeFile(thumbPath, buffer);
