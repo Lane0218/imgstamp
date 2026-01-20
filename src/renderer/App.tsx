@@ -5,6 +5,7 @@ type PhotoMeta = {
   date: string | null;
   location: string;
   description: string;
+  exifDate: string | null;
 };
 
 type PhotoItem = {
@@ -95,6 +96,7 @@ export function App() {
         date: null,
         location: '',
         description: '',
+        exifDate: null,
       },
     });
 
@@ -132,7 +134,12 @@ export function App() {
             return {
               ...item,
               selected: saved?.selected ?? true,
-              meta: saved?.meta ?? { date: null, location: '', description: '' },
+              meta: saved?.meta ?? {
+                date: null,
+                location: '',
+                description: '',
+                exifDate: null,
+              },
             };
           });
           setPhotos(merged);
@@ -213,7 +220,7 @@ export function App() {
     const updatePageSize = () => {
       const styles = getComputedStyle(grid);
       const rowHeight = parseFloat(styles.getPropertyValue('--thumb-row-height')) || 120;
-      const gap = parseFloat(styles.getPropertyValue('--thumb-gap')) || 12;
+      const gap = parseFloat(styles.getPropertyValue('--thumb-gap')) || 8;
       const availableHeight = grid.clientHeight;
       const rows = Math.max(1, Math.floor((availableHeight + gap) / (rowHeight + gap)));
       const nextPageSize = Math.max(1, rows * columns);
@@ -298,6 +305,88 @@ export function App() {
     };
   }, [visiblePhotos, baseDir]);
 
+  useEffect(() => {
+    if (!window.imgstamp || !baseDir) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadExifForVisible = async () => {
+      const pending = visiblePhotos.filter((photo) => photo.meta.exifDate === null);
+      if (pending.length === 0) {
+        return;
+      }
+
+      try {
+        const results = await Promise.all(
+          pending.map(async (photo) => ({
+            id: photo.id,
+            date: await window.imgstamp.readExifDate(baseDir, photo.relativePath),
+          })),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const dateMap = new Map(results.map((item) => [item.id, item.date]));
+        setPhotos((prev) =>
+          prev.map((photo) => {
+            const exifDate = dateMap.get(photo.id);
+            if (exifDate === undefined) {
+              return photo;
+            }
+            const nextMeta = { ...photo.meta, exifDate, date: photo.meta.date ?? exifDate };
+            return { ...photo, meta: nextMeta };
+          }),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadExifForVisible();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visiblePhotos, baseDir]);
+
+  const updateCurrentMeta = (partial: Partial<PhotoMeta>) => {
+    if (!currentPhoto) {
+      return;
+    }
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        photo.id === currentPhoto.id ? { ...photo, meta: { ...photo.meta, ...partial } } : photo,
+      ),
+    );
+  };
+
+  const handleCopyPrev = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    const currentIndex = photos.findIndex((photo) => photo.id === currentPhoto.id);
+    if (currentIndex <= 0) {
+      return;
+    }
+    const prevPhoto = photos[currentIndex - 1];
+    updateCurrentMeta({
+      date: prevPhoto.meta.date,
+      location: prevPhoto.meta.location,
+      description: prevPhoto.meta.description,
+    });
+  };
+
+  const handleResetExif = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    updateCurrentMeta({ date: currentPhoto.meta.exifDate });
+  };
+
   return (
     <div className="app">
       <div className="content">
@@ -353,7 +442,7 @@ export function App() {
                 >
                   <div className={`thumb-status-dot ${dotClass}`} />
                   <div className="thumb-image">
-                    <img src={item.thumbnailUrl || item.fileUrl} alt={item.filename} loading="lazy" />
+                    <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
                   <div className="thumb-name">{item.filename}</div>
                 </button>
@@ -449,22 +538,43 @@ export function App() {
           <div className="form">
             <label className="field">
               <span>拍摄日期</span>
-              <input type="date" />
+              <input
+                type="date"
+                value={currentPhoto?.meta.date ?? ''}
+                onChange={(event) => updateCurrentMeta({ date: event.target.value || null })}
+                disabled={!currentPhoto}
+              />
               <div className="field-actions">
-                <button className="btn btn--ghost">复位到 EXIF</button>
+                <button className="btn btn--ghost" onClick={handleResetExif} disabled={!currentPhoto}>
+                  复位到 EXIF
+                </button>
               </div>
             </label>
             <label className="field">
               <span>拍摄地点</span>
-              <input type="text" placeholder="例如：上海市" />
+              <input
+                type="text"
+                placeholder="例如：上海市"
+                value={currentPhoto?.meta.location ?? ''}
+                onChange={(event) => updateCurrentMeta({ location: event.target.value })}
+                disabled={!currentPhoto}
+              />
             </label>
             <label className="field">
               <span>描述</span>
-              <input type="text" placeholder="记录当下的心情或事件（限单行）..." />
+              <input
+                type="text"
+                placeholder="记录当下的心情或事件（限单行）..."
+                value={currentPhoto?.meta.description ?? ''}
+                onChange={(event) => updateCurrentMeta({ description: event.target.value })}
+                disabled={!currentPhoto}
+              />
             </label>
           </div>
           <div className="form-actions">
-            <button className="btn">复制上一张信息</button>
+            <button className="btn" onClick={handleCopyPrev} disabled={!currentPhoto}>
+              复制上一张信息
+            </button>
             <button className="btn btn--ghost" disabled>
               应用到所有选中
             </button>

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
+import exifr from 'exifr';
 
 type SaveProjectPayload = {
   projectPath: string;
@@ -49,6 +50,20 @@ async function scanImages(baseDir: string): Promise<ScanResult[]> {
   await walk(baseDir);
   results.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
   return results;
+}
+
+function formatExifDate(value: Date | string | number | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 async function getThumbnailPath(
@@ -134,6 +149,20 @@ export function registerIpcHandlers(): void {
       }
     },
   );
+
+  ipcMain.handle('image:readExifDate', async (_event, baseDir: string, relativePath: string) => {
+    if (!baseDir || !relativePath) {
+      throw new Error('参数不能为空');
+    }
+    const sourcePath = path.join(baseDir, relativePath);
+    try {
+      const data = await exifr.parse(sourcePath, { translateValues: false });
+      return formatExifDate(data?.DateTimeOriginal || data?.CreateDate || data?.ModifyDate);
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  });
 
   ipcMain.handle('dialog:openProjectFile', async () => {
     const result = await dialog.showOpenDialog({

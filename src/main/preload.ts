@@ -5,6 +5,8 @@ const api = {
   scanImages: (baseDir: string) => ipcRenderer.invoke('image:scan', baseDir),
   getThumbnail: (baseDir: string, relativePath: string, size: number) =>
     ipcRenderer.invoke('image:thumbnail', baseDir, relativePath, size),
+  readExifDate: (baseDir: string, relativePath: string) =>
+    ipcRenderer.invoke('image:readExifDate', baseDir, relativePath),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
   saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
   saveProject: (projectPath: string, data: unknown) =>
