@@ -73,6 +73,8 @@ export function App() {
   const [exportSize, setExportSize] = useState<'5' | '6'>('5');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [currentPhotoId, setCurrentPhotoId] = useState<string | null>(null);
+  const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
+  const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
   const gridRef = useRef<HTMLDivElement | null>(null);
@@ -107,7 +109,10 @@ export function App() {
           const scanned = await window.imgstamp.scanImages(dir);
           const nextPhotos = scanned.map(toPhotoItem);
           setPhotos(nextPhotos);
-          setCurrentPhotoId(nextPhotos[0]?.id ?? null);
+          const firstId = nextPhotos[0]?.id ?? null;
+          setCurrentPhotoId(firstId);
+          setMultiSelectedIds(firstId ? [firstId] : []);
+          setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(dir);
           setProjectPath(null);
           setStatusMessage(`已导入目录: ${dir}`);
@@ -143,7 +148,10 @@ export function App() {
             };
           });
           setPhotos(merged);
-          setCurrentPhotoId(merged[0]?.id ?? null);
+          const firstId = merged[0]?.id ?? null;
+          setCurrentPhotoId(firstId);
+          setMultiSelectedIds(firstId ? [firstId] : []);
+          setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(project.baseDir);
           setProjectName(project.name || '未命名项目');
           setProjectPath(path);
@@ -248,7 +256,10 @@ export function App() {
     if (currentPhotoId && visibleIds.has(currentPhotoId)) {
       return;
     }
-    setCurrentPhotoId(photos[start]?.id ?? null);
+    const nextId = photos[start]?.id ?? null;
+    setCurrentPhotoId(nextId);
+    setMultiSelectedIds(nextId ? [nextId] : []);
+    setSelectionAnchorIndex(nextId ? start : null);
   }, [pageIndex, pageSize, photos, currentPhotoId]);
 
   const selectedPhotos = photos.filter((photo) => photo.selected);
@@ -260,6 +271,8 @@ export function App() {
   const pageStart = pageIndex * pageSize;
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
   const pageItems = buildPageItems(totalPages, pageIndex);
+  const multiSelectedCount = multiSelectedIds.length;
+  const multiSelectedSet = useMemo(() => new Set(multiSelectedIds), [multiSelectedIds]);
 
   useEffect(() => {
     if (!window.imgstamp || !baseDir) {
@@ -387,6 +400,66 @@ export function App() {
     updateCurrentMeta({ date: currentPhoto.meta.exifDate });
   };
 
+  const handleApplyToSelected = () => {
+    if (!currentPhoto || multiSelectedIds.length < 2) {
+      return;
+    }
+    const { date, location, description } = currentPhoto.meta;
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        multiSelectedSet.has(photo.id)
+          ? {
+              ...photo,
+              meta: {
+                ...photo.meta,
+                date,
+                location,
+                description,
+              },
+            }
+          : photo,
+      ),
+    );
+  };
+
+  const handleThumbnailClick = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    index: number,
+    id: string,
+  ) => {
+    const isCtrl = event.metaKey || event.ctrlKey;
+    const isShift = event.shiftKey;
+
+    if (isShift && selectionAnchorIndex !== null) {
+      const start = Math.min(selectionAnchorIndex, index);
+      const end = Math.max(selectionAnchorIndex, index);
+      const ids = photos.slice(start, end + 1).map((photo) => photo.id);
+      setMultiSelectedIds(ids);
+      setCurrentPhotoId(id);
+      return;
+    }
+
+    if (isCtrl) {
+      const next = new Set(multiSelectedIds);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      if (next.size === 0) {
+        next.add(id);
+      }
+      setMultiSelectedIds(Array.from(next));
+      setCurrentPhotoId(id);
+      setSelectionAnchorIndex(index);
+      return;
+    }
+
+    setCurrentPhotoId(id);
+    setMultiSelectedIds([id]);
+    setSelectionAnchorIndex(index);
+  };
+
   return (
     <div className="app">
       <div className="content">
@@ -426,19 +499,23 @@ export function App() {
             ref={gridRef}
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
-            {visiblePhotos.map((item) => {
+            {visiblePhotos.map((item, index) => {
               const isComplete = Boolean(item.meta.date && item.meta.location && item.meta.description);
               const dotClass = item.selected
                 ? isComplete
                   ? 'thumb-status-dot--ok'
                   : 'thumb-status-dot--warn'
                 : 'thumb-status-dot--hidden';
+              const isMultiSelected = multiSelectedSet.has(item.id);
+              const isActive = item.id === currentPhotoId;
               return (
                 <button
                   type="button"
-                  className={`thumb-card ${item.id === currentPhotoId ? 'thumb-card--active' : ''}`}
+                  className={`thumb-card ${isActive ? 'thumb-card--active' : ''} ${
+                    isMultiSelected ? 'thumb-card--multi' : ''
+                  }`}
                   key={item.id}
-                  onClick={() => setCurrentPhotoId(item.id)}
+                  onClick={(event) => handleThumbnailClick(event, pageStart + index, item.id)}
                 >
                   <div className={`thumb-status-dot ${dotClass}`} />
                   <div className="thumb-image">
@@ -533,7 +610,7 @@ export function App() {
           </div>
           <div className="meta">
             <div className="meta__title">{currentPhoto?.filename ?? '未选择图片'}</div>
-            <div className="meta__sub">已选中 {selectedPhotos.length} 张图片</div>
+            <div className="meta__sub">已选中 {multiSelectedCount} 张图片</div>
           </div>
           <div className="form">
             <label className="field">
@@ -575,7 +652,11 @@ export function App() {
             <button className="btn" onClick={handleCopyPrev} disabled={!currentPhoto}>
               复制上一张信息
             </button>
-            <button className="btn btn--ghost" disabled>
+            <button
+              className="btn btn--ghost"
+              onClick={handleApplyToSelected}
+              disabled={!currentPhoto || multiSelectedCount < 2}
+            >
               应用到所有选中
             </button>
           </div>

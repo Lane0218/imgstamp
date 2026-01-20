@@ -186,6 +186,10 @@ select {
   box-shadow: 0 0 0 1px #2563eb;
 }
 
+.thumb-card--multi {
+  border-color: #bfdbfe;
+}
+
 .thumb-image {
   width: 100%;
   height: 90px;
