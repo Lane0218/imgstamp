@@ -29,6 +29,39 @@ type ProjectData = {
   }>;
 };
 
+type PageItem = number | 'ellipsis';
+
+const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const currentPage = currentIndex + 1;
+  const pages = new Set<number>();
+  pages.add(1);
+  pages.add(2);
+  pages.add(totalPages);
+  pages.add(currentPage);
+  pages.add(currentPage - 1);
+  pages.add(currentPage + 1);
+
+  const sorted = Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+
+  const result: PageItem[] = [];
+  for (let i = 0; i < sorted.length; i += 1) {
+    const page = sorted[i];
+    const prev = sorted[i - 1];
+    if (prev && page - prev > 1) {
+      result.push('ellipsis');
+    }
+    result.push(page);
+  }
+
+  return result;
+};
+
 export function App() {
   const [columns, setColumns] = useState(2);
   const [statusMessage, setStatusMessage] = useState('就绪');
@@ -218,6 +251,7 @@ export function App() {
   const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
   const pageStart = pageIndex * pageSize;
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
+  const pageItems = buildPageItems(totalPages, pageIndex);
 
   return (
     <div className="app">
@@ -288,19 +322,35 @@ export function App() {
                 className="btn btn--ghost"
                 onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
                 disabled={pageIndex === 0}
+                aria-label="上一页"
               >
-                上一页
+                &lt;
               </button>
+              <div className="pager__list">
+                {pageItems.map((item, index) =>
+                  item === 'ellipsis' ? (
+                    <span className="pager__ellipsis" key={`ellipsis-${index}`}>
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      className={`pager__item ${item === pageIndex + 1 ? 'pager__item--active' : ''}`}
+                      onClick={() => setPageIndex(item - 1)}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+              </div>
               <button
                 className="btn btn--ghost"
                 onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))}
                 disabled={pageIndex >= totalPages - 1}
+                aria-label="下一页"
               >
-                下一页
+                &gt;
               </button>
-            </div>
-            <div>
-              第 {pageIndex + 1} / {totalPages} 页
             </div>
           </div>
         </aside>
