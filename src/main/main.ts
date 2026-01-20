@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './ipc';
+import { buildAppMenu } from './menu';
 
 if (started) {
   app.quit();
@@ -34,10 +35,12 @@ const createWindow = () => {
 app.whenReady().then(() => {
   createWindow();
   registerIpcHandlers();
+  buildAppMenu(mainWindow);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+      buildAppMenu(mainWindow);
     }
   });
 });

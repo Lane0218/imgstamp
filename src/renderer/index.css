@@ -31,45 +31,6 @@ select {
   flex-direction: column;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 24px;
-  background: var(--panel-bg);
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar__left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 18px;
-  color: #111827;
-}
-
-.topbar__group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.topbar__center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.topbar__right {
-  margin-left: auto;
-}
-
 .btn {
   padding: 8px 12px;
   border-radius: 6px;
@@ -116,22 +77,6 @@ select {
   border-radius: 2px;
 }
 
-.layout-icon--1 {
-  grid-template-columns: repeat(1, 1fr);
-}
-
-.layout-icon--2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.layout-icon--3 {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.layout-icon--4 {
-  grid-template-columns: repeat(4, 1fr);
-}
-
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -143,12 +88,6 @@ select {
   gap: 6px;
   font-size: 14px;
   color: var(--muted);
-}
-
-.field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
 }
 
 .field input,
@@ -299,6 +238,29 @@ select {
 .preview-toolbar {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
+}
+
+.icon-control {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-control svg {
+  width: 18px;
+  height: 18px;
+  stroke: #334155;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .meta {

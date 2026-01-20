@@ -14,29 +14,6 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="topbar">
-        <div className="topbar__left">
-          <div className="brand">ImgStamp</div>
-          <div className="topbar__group">
-            <button className="btn">打开文件夹</button>
-            <button className="btn">保存项目</button>
-            <button className="btn">打开项目</button>
-          </div>
-        </div>
-        <div className="topbar__center">
-          <label className="field field--inline">
-            <span>目标尺寸</span>
-            <select>
-              <option>5 寸 (12.7x8.9cm)</option>
-              <option>6 寸 (15.2x10.2cm)</option>
-            </select>
-          </label>
-        </div>
-        <div className="topbar__right">
-          <button className="btn btn--primary">导出成品</button>
-        </div>
-      </header>
-
       <div className="content">
         <aside className="panel panel--left">
           <div className="panel__header">
@@ -45,45 +22,18 @@ export function App() {
             </div>
             <div className="view-switch">
               <button
-                className={`btn btn--ghost icon-btn ${columns === 1 ? 'is-active' : ''}`}
-                onClick={() => setColumns(1)}
-                aria-label="单列"
+                className="btn btn--ghost icon-btn"
+                onClick={() => setColumns((prev) => (prev === 4 ? 1 : prev + 1))}
+                aria-label="切换列数"
+                title={`当前 ${columns} 列，点击切换`}
               >
-                <span className="layout-icon layout-icon--1">
-                  <span />
-                </span>
-              </button>
-              <button
-                className={`btn btn--ghost icon-btn ${columns === 2 ? 'is-active' : ''}`}
-                onClick={() => setColumns(2)}
-                aria-label="两列"
-              >
-                <span className="layout-icon layout-icon--2">
-                  <span />
-                  <span />
-                </span>
-              </button>
-              <button
-                className={`btn btn--ghost icon-btn ${columns === 3 ? 'is-active' : ''}`}
-                onClick={() => setColumns(3)}
-                aria-label="三列"
-              >
-                <span className="layout-icon layout-icon--3">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              </button>
-              <button
-                className={`btn btn--ghost icon-btn ${columns === 4 ? 'is-active' : ''}`}
-                onClick={() => setColumns(4)}
-                aria-label="四列"
-              >
-                <span className="layout-icon layout-icon--4">
-                  <span />
-                  <span />
-                  <span />
-                  <span />
+                <span
+                  className="layout-icon"
+                  style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+                >
+                  {Array.from({ length: columns }).map((_, index) => (
+                    <span key={index} />
+                  ))}
                 </span>
               </button>
             </div>
@@ -117,13 +67,31 @@ export function App() {
             </div>
           </div>
           <div className="preview-area">
+            <div className="preview-toolbar">
+              <button className="icon-control" aria-label="放大">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="11" y1="8" x2="11" y2="14" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+              </button>
+              <button className="icon-control" aria-label="缩小">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+              </button>
+              <button className="icon-control" aria-label="查看原图">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
             <div className="preview-canvas">
               <div className="preview-placeholder">预览生成中...</div>
-            </div>
-            <div className="preview-toolbar">
-              <button className="btn btn--ghost">放大</button>
-              <button className="btn btn--ghost">缩小</button>
-              <button className="btn btn--ghost">查看原图</button>
             </div>
           </div>
         </section>
