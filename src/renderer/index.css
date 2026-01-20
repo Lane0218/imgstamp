@@ -161,65 +161,61 @@ select {
   --thumb-gap: 8px;
 }
 
-.thumb-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
+.thumb-cell {
+  border: none;
+  background: transparent;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  background: #fafafa;
-  position: relative;
-  overflow: hidden;
+  gap: 6px;
   cursor: pointer;
   text-align: left;
   height: var(--thumb-row-height);
 }
 
-.thumb-card:focus-visible {
+.thumb-cell:focus-visible {
   outline: 2px solid #94a3b8;
   outline-offset: 2px;
 }
 
-.thumb-card--active {
+.thumb-cell--active .thumb-frame {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px #2563eb;
-  background: #eaf2ff;
 }
 
-.thumb-card--multi {
+.thumb-cell--multi .thumb-frame {
   border-color: #bfdbfe;
   box-shadow: 0 0 0 2px #bfdbfe;
-  background: #f2f7ff;
 }
 
-.thumb-image {
-  width: 100%;
-  height: 90px;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #f1f5f9;
-}
-
-.thumb-image img {
+.thumb-frame {
+  position: relative;
   width: 100%;
   height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.thumb-frame img {
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
 }
 
 .thumb-name {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 6px 8px;
   font-size: 12px;
-  color: #f9fafb;
-  background: rgba(17, 24, 39, 0.72);
+  color: #111827;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
-.thumb-card:hover .thumb-name {
+.thumb-cell:hover .thumb-name {
   opacity: 1;
 }
 
