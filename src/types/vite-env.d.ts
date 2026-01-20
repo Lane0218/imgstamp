@@ -19,6 +19,7 @@ type ImgStampApi = {
     baseDir: string,
     relativePath: string,
     meta: { date: string | null; location: string; description: string },
+    options: { size: '5' | '6'; mode: 'final' | 'original' },
   ) => Promise<string>;
   openProjectFile: () => Promise<string | null>;
   saveProjectFile: () => Promise<string | null>;

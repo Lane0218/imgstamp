@@ -66,11 +66,17 @@ function formatExifDate(value: Date | string | number | null | undefined): strin
   return `${year}-${month}-${day}`;
 }
 
-function buildPreviewSvg(date: string | null, location: string, description: string, width: number, height: number) {
+function buildPreviewSvg(
+  date: string | null,
+  location: string,
+  description: string,
+  width: number,
+  height: number,
+  textAreaTop: number,
+) {
   const padding = Math.max(24, Math.round(width * 0.04));
-  const textY = height - padding - 32;
   const fontSize = Math.round(width * 0.028);
-  const lineGap = Math.round(fontSize * 1.4);
+  const textY = textAreaTop + padding + fontSize;
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -79,18 +85,25 @@ function buildPreviewSvg(date: string | null, location: string, description: str
   const dateText = date ? safe(date) : '';
   const locationText = location ? safe(location) : '';
   const descText = description ? safe(description) : '';
+  const line = [dateText, locationText, descText].filter(Boolean).join(' · ');
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; }\n  </style>\n  <text class="label" x="${padding}" y="${textY}">${dateText}</text>\n  <text class="label" x="${padding}" y="${textY + lineGap}">${locationText}</text>\n  <text class="label" x="${padding}" y="${textY + lineGap * 2}">${descText}</text>\n</svg>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; }\n  </style>\n  <text class="label" x="${padding}" y="${textY}">${line}</text>\n</svg>`;
 }
 
 async function buildPreviewImage(
   sourcePath: string,
   meta: { date: string | null; location: string; description: string },
+  options: { size: '5' | '6'; mode: 'final' | 'original' },
 ) {
   const targetWidth = 900;
-  const borderHeight = 160;
-  const totalHeight = Math.round(targetWidth * 0.75) + borderHeight;
-  const imageAreaHeight = totalHeight - borderHeight;
+  const sizeMap = {
+    '5': { widthCm: 12.7, heightCm: 8.9 },
+    '6': { widthCm: 15.2, heightCm: 10.2 },
+  };
+  const ratio = sizeMap[options.size] ?? sizeMap['5'];
+  const totalHeight = Math.round((targetWidth * ratio.heightCm) / ratio.widthCm);
+  const textAreaHeight = options.mode === 'final' ? Math.round(totalHeight * 0.18) : 0;
+  const imageAreaHeight = totalHeight - textAreaHeight;
 
   const base = sharp({
     create: {
@@ -105,15 +118,20 @@ async function buildPreviewImage(
     .resize(targetWidth, imageAreaHeight, { fit: 'contain', background: '#ffffff' })
     .toBuffer();
 
-  const svg = buildPreviewSvg(meta.date, meta.location, meta.description, targetWidth, totalHeight);
+  const overlays = [{ input: resized, top: 0, left: 0 }];
+  if (options.mode === 'final') {
+    const svg = buildPreviewSvg(
+      meta.date,
+      meta.location,
+      meta.description,
+      targetWidth,
+      totalHeight,
+      imageAreaHeight,
+    );
+    overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
+  }
 
-  return base
-    .composite([
-      { input: resized, top: 0, left: 0 },
-      { input: Buffer.from(svg), top: 0, left: 0 },
-    ])
-    .jpeg({ quality: 85 })
-    .toBuffer();
+  return base.composite(overlays).jpeg({ quality: 85 }).toBuffer();
 }
 
 async function getThumbnailPath(
@@ -221,13 +239,14 @@ export function registerIpcHandlers(): void {
       baseDir: string,
       relativePath: string,
       meta: { date: string | null; location: string; description: string },
+      options: { size: '5' | '6'; mode: 'final' | 'original' },
     ) => {
       if (!baseDir || !relativePath) {
         throw new Error('参数不能为空');
       }
       const sourcePath = path.join(baseDir, relativePath);
       try {
-        const buffer = await buildPreviewImage(sourcePath, meta);
+        const buffer = await buildPreviewImage(sourcePath, meta, options);
         return `data:image/jpeg;base64,${buffer.toString('base64')}`;
       } catch (error) {
         console.error(error);

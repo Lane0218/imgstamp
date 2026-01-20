@@ -11,7 +11,8 @@ const api = {
     baseDir: string,
     relativePath: string,
     meta: { date: string | null; location: string; description: string },
-  ) => ipcRenderer.invoke('image:preview', baseDir, relativePath, meta),
+    options: { size: '5' | '6'; mode: 'final' | 'original' },
+  ) => ipcRenderer.invoke('image:preview', baseDir, relativePath, meta, options),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
   saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
   saveProject: (projectPath: string, data: unknown) =>

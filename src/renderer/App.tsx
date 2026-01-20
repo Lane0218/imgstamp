@@ -33,6 +33,8 @@ type ProjectData = {
 
 type PageItem = number | 'ellipsis';
 
+type PreviewMode = 'final' | 'original';
+
 const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -78,6 +80,8 @@ export function App() {
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('final');
+  const [zoom, setZoom] = useState(1);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
@@ -219,6 +223,10 @@ export function App() {
       unsubSetSize();
     };
   }, [projectPath, projectName, baseDir, photos]);
+
+  useEffect(() => {
+    setZoom(1);
+  }, [currentPhotoId, previewMode]);
 
   useEffect(() => {
     const grid = gridRef.current;
@@ -375,11 +383,16 @@ export function App() {
 
     const handle = setTimeout(async () => {
       try {
-        const url = await window.imgstamp.getPreview(baseDir, currentPhoto.relativePath, {
-          date: currentPhoto.meta.date,
-          location: currentPhoto.meta.location,
-          description: currentPhoto.meta.description,
-        });
+        const url = await window.imgstamp.getPreview(
+          baseDir,
+          currentPhoto.relativePath,
+          {
+            date: currentPhoto.meta.date,
+            location: currentPhoto.meta.location,
+            description: currentPhoto.meta.description,
+          },
+          { size: exportSize, mode: previewMode },
+        );
         setPreviewUrl(url || null);
       } catch (error) {
         console.error(error);
@@ -393,6 +406,8 @@ export function App() {
     currentPhoto?.meta.date,
     currentPhoto?.meta.location,
     currentPhoto?.meta.description,
+    exportSize,
+    previewMode,
   ]);
 
   const updateCurrentMeta = (partial: Partial<PhotoMeta>) => {
@@ -487,6 +502,18 @@ export function App() {
     setCurrentPhotoId(id);
     setMultiSelectedIds([id]);
     setSelectionAnchorIndex(index);
+  };
+
+  const handleZoomIn = () => {
+    setZoom((prev) => Math.min(2.5, Number((prev + 0.1).toFixed(2))));
+  };
+
+  const handleZoomOut = () => {
+    setZoom((prev) => Math.max(0.5, Number((prev - 0.1).toFixed(2))));
+  };
+
+  const handleToggleOriginal = () => {
+    setPreviewMode((prev) => (prev === 'final' ? 'original' : 'final'));
   };
 
   return (
@@ -603,7 +630,7 @@ export function App() {
           </div>
           <div className="preview-area">
             <div className="preview-toolbar">
-              <button className="icon-control" aria-label="放大">
+              <button className="icon-control" aria-label="放大" onClick={handleZoomIn}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="7" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -611,14 +638,14 @@ export function App() {
                   <line x1="8" y1="11" x2="14" y2="11" />
                 </svg>
               </button>
-              <button className="icon-control" aria-label="缩小">
+              <button className="icon-control" aria-label="缩小" onClick={handleZoomOut}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="7" />
                   <line x1="21" y1="21" x2="16.65" y2="16.65" />
                   <line x1="8" y1="11" x2="14" y2="11" />
                 </svg>
               </button>
-              <button className="icon-control" aria-label="查看原图">
+              <button className="icon-control" aria-label="查看原图" onClick={handleToggleOriginal}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
                   <circle cx="12" cy="12" r="3" />
@@ -627,7 +654,9 @@ export function App() {
             </div>
             <div className="preview-canvas">
               {previewUrl ? (
-                <img src={previewUrl} alt="预览" />
+                <div className="preview-image" style={{ transform: `scale(${zoom})` }}>
+                  <img src={previewUrl} alt="预览" />
+                </div>
               ) : (
                 <div className="preview-placeholder">预览生成中...</div>
               )}
