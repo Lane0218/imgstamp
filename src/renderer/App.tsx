@@ -586,8 +586,6 @@ export function App() {
                           ),
                         );
                       }}
-                      aria-label={item.selected ? '取消选择' : '加入导出'}
-                      title={item.selected ? '取消选择' : '加入导出'}
                     />
                     <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
