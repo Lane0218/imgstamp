@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import './index.css';
 
 type PhotoMeta = {
@@ -38,6 +38,9 @@ export function App() {
   const [exportSize, setExportSize] = useState<'5' | '6'>('5');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [currentPhotoId, setCurrentPhotoId] = useState<string | null>(null);
+  const [pageSize, setPageSize] = useState(1);
+  const [pageIndex, setPageIndex] = useState(0);
+  const gridRef = useRef<HTMLDivElement | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
 
@@ -167,11 +170,54 @@ export function App() {
     };
   }, [projectPath, projectName, baseDir, photos]);
 
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) {
+      return;
+    }
+
+    const updatePageSize = () => {
+      const styles = getComputedStyle(grid);
+      const rowHeight = parseFloat(styles.getPropertyValue('--thumb-row-height')) || 120;
+      const gap = parseFloat(styles.getPropertyValue('--thumb-gap')) || 12;
+      const availableHeight = grid.clientHeight;
+      const rows = Math.max(1, Math.floor((availableHeight + gap) / (rowHeight + gap)));
+      const nextPageSize = Math.max(1, rows * columns);
+      setPageSize(nextPageSize);
+    };
+
+    const observer = new ResizeObserver(() => updatePageSize());
+    observer.observe(grid);
+    updatePageSize();
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [columns]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
+    setPageIndex((prev) => Math.min(prev, totalPages - 1));
+  }, [photos.length, pageSize]);
+
+  useEffect(() => {
+    const start = pageIndex * pageSize;
+    const end = start + pageSize;
+    const visibleIds = new Set(photos.slice(start, end).map((photo) => photo.id));
+    if (currentPhotoId && visibleIds.has(currentPhotoId)) {
+      return;
+    }
+    setCurrentPhotoId(photos[start]?.id ?? null);
+  }, [pageIndex, pageSize, photos, currentPhotoId]);
+
   const selectedPhotos = photos.filter((photo) => photo.selected);
   const incompleteCount = selectedPhotos.filter(
     (photo) => !photo.meta.date || !photo.meta.location || !photo.meta.description,
   ).length;
   const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
+  const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
+  const pageStart = pageIndex * pageSize;
+  const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
 
   return (
     <div className="app">
@@ -207,8 +253,12 @@ export function App() {
             <span>尺寸: {exportSize} 寸</span>
           </div>
 
-          <div className="thumb-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-            {photos.map((item) => {
+          <div
+            className="thumb-grid"
+            ref={gridRef}
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+          >
+            {visiblePhotos.map((item) => {
               const isComplete = Boolean(item.meta.date && item.meta.location && item.meta.description);
               const dotClass = item.selected
                 ? isComplete
@@ -230,6 +280,28 @@ export function App() {
                 </button>
               );
             })}
+          </div>
+
+          <div className="pager">
+            <div className="pager__group">
+              <button
+                className="btn btn--ghost"
+                onClick={() => setPageIndex((prev) => Math.max(0, prev - 1))}
+                disabled={pageIndex === 0}
+              >
+                上一页
+              </button>
+              <button
+                className="btn btn--ghost"
+                onClick={() => setPageIndex((prev) => Math.min(totalPages - 1, prev + 1))}
+                disabled={pageIndex >= totalPages - 1}
+              >
+                下一页
+              </button>
+            </div>
+            <div>
+              第 {pageIndex + 1} / {totalPages} 页
+            </div>
           </div>
         </aside>
 

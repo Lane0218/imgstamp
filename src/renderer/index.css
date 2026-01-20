@@ -154,8 +154,11 @@ select {
   padding: 12px 16px 16px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  overflow: auto;
+  gap: var(--thumb-gap, 12px);
+  overflow: hidden;
+  flex: 1;
+  --thumb-row-height: 120px;
+  --thumb-gap: 12px;
 }
 
 .thumb-card {
@@ -170,6 +173,7 @@ select {
   overflow: hidden;
   cursor: pointer;
   text-align: left;
+  height: var(--thumb-row-height);
 }
 
 .thumb-card:focus-visible {
@@ -325,6 +329,21 @@ select {
   color: var(--muted);
   display: flex;
   justify-content: space-between;
+}
+
+.pager {
+  padding: 10px 16px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pager__group {
+  display: flex;
+  gap: 8px;
 }
 
 @media (max-width: 1200px) {
