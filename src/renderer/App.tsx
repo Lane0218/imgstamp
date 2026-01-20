@@ -578,6 +578,22 @@ export function App() {
                     <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
                   <div className="thumb-name">{item.filename}</div>
+                  <button
+                    type="button"
+                    className={`thumb-select ${item.selected ? 'is-selected' : ''}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setPhotos((prev) =>
+                        prev.map((photo) =>
+                          photo.id === item.id ? { ...photo, selected: !photo.selected } : photo,
+                        ),
+                      );
+                    }}
+                    aria-label={item.selected ? '取消选择' : '加入导出'}
+                    title={item.selected ? '取消选择' : '加入导出'}
+                  >
+                    {item.selected ? '✓' : ''}
+                  </button>
                 </button>
               );
             })}
