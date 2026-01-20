@@ -1,10 +1,4 @@
 import { useState } from 'react';
-import {
-  TbLayoutColumns1,
-  TbLayoutColumns2,
-  TbLayoutColumns3,
-  TbLayoutColumns4,
-} from 'react-icons/tb';
 import './index.css';
 
 export function App() {
@@ -55,28 +49,42 @@ export function App() {
                 onClick={() => setColumns(1)}
                 aria-label="单列"
               >
-                <TbLayoutColumns1 />
+                <span className="layout-icon layout-icon--1">
+                  <span />
+                </span>
               </button>
               <button
                 className={`btn btn--ghost icon-btn ${columns === 2 ? 'is-active' : ''}`}
                 onClick={() => setColumns(2)}
                 aria-label="两列"
               >
-                <TbLayoutColumns2 />
+                <span className="layout-icon layout-icon--2">
+                  <span />
+                  <span />
+                </span>
               </button>
               <button
                 className={`btn btn--ghost icon-btn ${columns === 3 ? 'is-active' : ''}`}
                 onClick={() => setColumns(3)}
                 aria-label="三列"
               >
-                <TbLayoutColumns3 />
+                <span className="layout-icon layout-icon--3">
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </button>
               <button
                 className={`btn btn--ghost icon-btn ${columns === 4 ? 'is-active' : ''}`}
                 onClick={() => setColumns(4)}
                 aria-label="四列"
               >
-                <TbLayoutColumns4 />
+                <span className="layout-icon layout-icon--4">
+                  <span />
+                  <span />
+                  <span />
+                  <span />
+                </span>
               </button>
             </div>
           </div>

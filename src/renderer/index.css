@@ -103,6 +103,35 @@ select {
   font-size: 18px;
 }
 
+.layout-icon {
+  display: grid;
+  gap: 2px;
+  width: 18px;
+  height: 12px;
+}
+
+.layout-icon span {
+  display: block;
+  background: #475569;
+  border-radius: 2px;
+}
+
+.layout-icon--1 {
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.layout-icon--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.layout-icon--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.layout-icon--4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
