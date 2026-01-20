@@ -7,6 +7,11 @@ const api = {
     ipcRenderer.invoke('image:thumbnail', baseDir, relativePath, size),
   readExifDate: (baseDir: string, relativePath: string) =>
     ipcRenderer.invoke('image:readExifDate', baseDir, relativePath),
+  getPreview: (
+    baseDir: string,
+    relativePath: string,
+    meta: { date: string | null; location: string; description: string },
+  ) => ipcRenderer.invoke('image:preview', baseDir, relativePath, meta),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
   saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
   saveProject: (projectPath: string, data: unknown) =>

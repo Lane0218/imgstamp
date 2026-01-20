@@ -263,11 +263,19 @@ select {
   align-items: center;
   justify-content: center;
   min-height: 320px;
+  overflow: hidden;
 }
 
 .preview-placeholder {
   color: #475569;
   font-size: 14px;
+}
+
+.preview-canvas img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .preview-toolbar {

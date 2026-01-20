@@ -77,6 +77,7 @@ export function App() {
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
@@ -108,8 +109,8 @@ export function App() {
         if (dir) {
           const scanned = await window.imgstamp.scanImages(dir);
           const nextPhotos = scanned.map(toPhotoItem);
-          setPhotos(nextPhotos);
           const firstId = nextPhotos[0]?.id ?? null;
+          setPhotos(nextPhotos);
           setCurrentPhotoId(firstId);
           setMultiSelectedIds(firstId ? [firstId] : []);
           setSelectionAnchorIndex(firstId ? 0 : null);
@@ -147,8 +148,8 @@ export function App() {
               },
             };
           });
-          setPhotos(merged);
           const firstId = merged[0]?.id ?? null;
+          setPhotos(merged);
           setCurrentPhotoId(firstId);
           setMultiSelectedIds(firstId ? [firstId] : []);
           setSelectionAnchorIndex(firstId ? 0 : null);
@@ -365,6 +366,34 @@ export function App() {
       cancelled = true;
     };
   }, [visiblePhotos, baseDir]);
+
+  useEffect(() => {
+    if (!window.imgstamp || !baseDir || !currentPhoto) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const handle = setTimeout(async () => {
+      try {
+        const url = await window.imgstamp.getPreview(baseDir, currentPhoto.relativePath, {
+          date: currentPhoto.meta.date,
+          location: currentPhoto.meta.location,
+          description: currentPhoto.meta.description,
+        });
+        setPreviewUrl(url || null);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [
+    baseDir,
+    currentPhoto?.id,
+    currentPhoto?.meta.date,
+    currentPhoto?.meta.location,
+    currentPhoto?.meta.description,
+  ]);
 
   const updateCurrentMeta = (partial: Partial<PhotoMeta>) => {
     if (!currentPhoto) {
@@ -597,7 +626,11 @@ export function App() {
               </button>
             </div>
             <div className="preview-canvas">
-              <div className="preview-placeholder">预览生成中...</div>
+              {previewUrl ? (
+                <img src={previewUrl} alt="预览" />
+              ) : (
+                <div className="preview-placeholder">预览生成中...</div>
+              )}
             </div>
           </div>
         </section>

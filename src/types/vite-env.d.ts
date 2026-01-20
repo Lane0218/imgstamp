@@ -15,6 +15,11 @@ type ImgStampApi = {
   >;
   getThumbnail: (baseDir: string, relativePath: string, size: number) => Promise<string>;
   readExifDate: (baseDir: string, relativePath: string) => Promise<string | null>;
+  getPreview: (
+    baseDir: string,
+    relativePath: string,
+    meta: { date: string | null; location: string; description: string },
+  ) => Promise<string>;
   openProjectFile: () => Promise<string | null>;
   saveProjectFile: () => Promise<string | null>;
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;

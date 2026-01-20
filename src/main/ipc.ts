@@ -66,6 +66,56 @@ function formatExifDate(value: Date | string | number | null | undefined): strin
   return `${year}-${month}-${day}`;
 }
 
+function buildPreviewSvg(date: string | null, location: string, description: string, width: number, height: number) {
+  const padding = Math.max(24, Math.round(width * 0.04));
+  const textY = height - padding - 32;
+  const fontSize = Math.round(width * 0.028);
+  const lineGap = Math.round(fontSize * 1.4);
+  const safe = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  const dateText = date ? safe(date) : '';
+  const locationText = location ? safe(location) : '';
+  const descText = description ? safe(description) : '';
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; }\n  </style>\n  <text class="label" x="${padding}" y="${textY}">${dateText}</text>\n  <text class="label" x="${padding}" y="${textY + lineGap}">${locationText}</text>\n  <text class="label" x="${padding}" y="${textY + lineGap * 2}">${descText}</text>\n</svg>`;
+}
+
+async function buildPreviewImage(
+  sourcePath: string,
+  meta: { date: string | null; location: string; description: string },
+) {
+  const targetWidth = 900;
+  const borderHeight = 160;
+  const totalHeight = Math.round(targetWidth * 0.75) + borderHeight;
+  const imageAreaHeight = totalHeight - borderHeight;
+
+  const base = sharp({
+    create: {
+      width: targetWidth,
+      height: totalHeight,
+      channels: 3,
+      background: '#ffffff',
+    },
+  });
+
+  const resized = await sharp(sourcePath)
+    .resize(targetWidth, imageAreaHeight, { fit: 'contain', background: '#ffffff' })
+    .toBuffer();
+
+  const svg = buildPreviewSvg(meta.date, meta.location, meta.description, targetWidth, totalHeight);
+
+  return base
+    .composite([
+      { input: resized, top: 0, left: 0 },
+      { input: Buffer.from(svg), top: 0, left: 0 },
+    ])
+    .jpeg({ quality: 85 })
+    .toBuffer();
+}
+
 async function getThumbnailPath(
   baseDir: string,
   relativePath: string,
@@ -163,6 +213,28 @@ export function registerIpcHandlers(): void {
       return null;
     }
   });
+
+  ipcMain.handle(
+    'image:preview',
+    async (
+      _event,
+      baseDir: string,
+      relativePath: string,
+      meta: { date: string | null; location: string; description: string },
+    ) => {
+      if (!baseDir || !relativePath) {
+        throw new Error('参数不能为空');
+      }
+      const sourcePath = path.join(baseDir, relativePath);
+      try {
+        const buffer = await buildPreviewImage(sourcePath, meta);
+        return `data:image/jpeg;base64,${buffer.toString('base64')}`;
+      } catch (error) {
+        console.error(error);
+        return '';
+      }
+    },
+  );
 
   ipcMain.handle('dialog:openProjectFile', async () => {
     const result = await dialog.showOpenDialog({
