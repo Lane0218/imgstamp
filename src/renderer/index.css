@@ -154,11 +154,11 @@ select {
   padding: 12px 16px 16px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--thumb-gap, 12px);
+  gap: var(--thumb-gap, 8px);
   overflow: hidden;
   flex: 1;
   --thumb-row-height: 120px;
-  --thumb-gap: 12px;
+  --thumb-gap: 8px;
 }
 
 .thumb-card {
@@ -191,13 +191,13 @@ select {
   height: 90px;
   border-radius: 6px;
   overflow: hidden;
-  background: linear-gradient(135deg, #d1d5db, #f3f4f6);
+  background: #f1f5f9;
 }
 
 .thumb-image img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
