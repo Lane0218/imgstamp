@@ -104,23 +104,33 @@ export function registerIpcHandlers(): void {
 
       const safeSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 256;
       const { sourcePath, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
+      const outputMime = 'image/jpeg';
 
       try {
-        await fs.access(thumbPath);
-        return pathToFileURL(thumbPath).toString();
+        const cached = await fs.readFile(thumbPath);
+        return `data:${outputMime};base64,${cached.toString('base64')}`;
       } catch {
         // ignore
       }
 
       try {
-        await sharp(sourcePath)
+        const buffer = await sharp(sourcePath)
           .resize(safeSize, safeSize, { fit: 'cover' })
           .jpeg({ quality: 80 })
-          .toFile(thumbPath);
-        return pathToFileURL(thumbPath).toString();
+          .toBuffer();
+        await fs.writeFile(thumbPath, buffer);
+        return `data:${outputMime};base64,${buffer.toString('base64')}`;
       } catch (error) {
         console.error(error);
-        return pathToFileURL(sourcePath).toString();
+        try {
+          const ext = path.extname(sourcePath).toLowerCase();
+          const fallbackMime = ext === '.png' ? 'image/png' : 'image/jpeg';
+          const buffer = await fs.readFile(sourcePath);
+          return `data:${fallbackMime};base64,${buffer.toString('base64')}`;
+        } catch (readError) {
+          console.error(readError);
+          return '';
+        }
       }
     },
   );

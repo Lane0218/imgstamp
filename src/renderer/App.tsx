@@ -353,7 +353,7 @@ export function App() {
                 >
                   <div className={`thumb-status-dot ${dotClass}`} />
                   <div className="thumb-image">
-                    <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
+                    <img src={item.thumbnailUrl || item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
                   <div className="thumb-name">{item.filename}</div>
                 </button>
