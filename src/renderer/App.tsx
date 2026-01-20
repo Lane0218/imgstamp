@@ -1,6 +1,14 @@
+import { useState } from 'react';
+import {
+  TbLayoutColumns1,
+  TbLayoutColumns2,
+  TbLayoutColumns3,
+  TbLayoutColumns4,
+} from 'react-icons/tb';
 import './index.css';
 
 export function App() {
+  const [columns, setColumns] = useState(2);
   const thumbnails = [
     { id: 1, name: 'IMG_0001.JPG', status: '完整' },
     { id: 2, name: 'IMG_0002.JPG', status: '缺失' },
@@ -12,23 +20,26 @@ export function App() {
 
   return (
     <div className="app">
-      <header className="toolbar">
-        <div className="toolbar__group">
-          <button className="btn">📂 打开文件夹</button>
-          <button className="btn">💾 保存项目</button>
-          <button className="btn">📂 打开项目</button>
+      <header className="topbar">
+        <div className="topbar__left">
+          <div className="brand">ImgStamp</div>
+          <div className="topbar__group">
+            <button className="btn">打开文件夹</button>
+            <button className="btn">保存项目</button>
+            <button className="btn">打开项目</button>
+          </div>
         </div>
-        <div className="toolbar__group">
-          <label className="field">
-            <span>📏 目标尺寸</span>
+        <div className="topbar__center">
+          <label className="field field--inline">
+            <span>目标尺寸</span>
             <select>
               <option>5 寸 (12.7x8.9cm)</option>
               <option>6 寸 (15.2x10.2cm)</option>
             </select>
           </label>
         </div>
-        <div className="toolbar__group toolbar__group--right">
-          <button className="btn btn--primary">🚀 导出成品</button>
+        <div className="topbar__right">
+          <button className="btn btn--primary">导出成品</button>
         </div>
       </header>
 
@@ -37,13 +48,36 @@ export function App() {
           <div className="panel__header">
             <div>
               <strong>资源管理器</strong>
-              <div className="panel__sub">Source Explorer</div>
             </div>
             <div className="view-switch">
-              <button className="btn btn--ghost">1 列</button>
-              <button className="btn btn--ghost is-active">2 列</button>
-              <button className="btn btn--ghost">3 列</button>
-              <button className="btn btn--ghost">4 列</button>
+              <button
+                className={`btn btn--ghost icon-btn ${columns === 1 ? 'is-active' : ''}`}
+                onClick={() => setColumns(1)}
+                aria-label="单列"
+              >
+                <TbLayoutColumns1 />
+              </button>
+              <button
+                className={`btn btn--ghost icon-btn ${columns === 2 ? 'is-active' : ''}`}
+                onClick={() => setColumns(2)}
+                aria-label="两列"
+              >
+                <TbLayoutColumns2 />
+              </button>
+              <button
+                className={`btn btn--ghost icon-btn ${columns === 3 ? 'is-active' : ''}`}
+                onClick={() => setColumns(3)}
+                aria-label="三列"
+              >
+                <TbLayoutColumns3 />
+              </button>
+              <button
+                className={`btn btn--ghost icon-btn ${columns === 4 ? 'is-active' : ''}`}
+                onClick={() => setColumns(4)}
+                aria-label="四列"
+              >
+                <TbLayoutColumns4 />
+              </button>
             </div>
           </div>
 
@@ -53,17 +87,16 @@ export function App() {
             <span>待完善: 18 张</span>
           </div>
 
-          <div className="thumb-grid">
+          <div className="thumb-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
             {thumbnails.map((item) => (
               <div className="thumb-card" key={item.id}>
+                <div
+                  className={`thumb-status-dot ${
+                    item.status === '完整' ? 'thumb-status-dot--ok' : 'thumb-status-dot--warn'
+                  }`}
+                />
                 <div className="thumb-image" />
                 <div className="thumb-name">{item.name}</div>
-                <div className="thumb-status">
-                  <span className={item.status === '完整' ? 'status-ok' : 'status-warn'}>
-                    {item.status === '完整' ? '🟢 完整' : '⚠️ 缺失'}
-                  </span>
-                  <span>✅ 已选</span>
-                </div>
               </div>
             ))}
           </div>
@@ -73,7 +106,6 @@ export function App() {
           <div className="panel__header">
             <div>
               <strong>实时预览</strong>
-              <div className="panel__sub">Live Preview</div>
             </div>
           </div>
           <div className="preview-area">
@@ -81,9 +113,9 @@ export function App() {
               <div className="preview-placeholder">预览生成中...</div>
             </div>
             <div className="preview-toolbar">
-              <button className="btn btn--ghost">🔍 放大</button>
-              <button className="btn btn--ghost">🔎 缩小</button>
-              <button className="btn btn--ghost">👁️ 查看原图</button>
+              <button className="btn btn--ghost">放大</button>
+              <button className="btn btn--ghost">缩小</button>
+              <button className="btn btn--ghost">查看原图</button>
             </div>
           </div>
         </section>
@@ -92,7 +124,6 @@ export function App() {
           <div className="panel__header">
             <div>
               <strong>属性编辑</strong>
-              <div className="panel__sub">Inspector Panel</div>
             </div>
           </div>
           <div className="meta">
@@ -102,10 +133,9 @@ export function App() {
           <div className="form">
             <label className="field">
               <span>拍摄日期</span>
-              <input type="datetime-local" />
+              <input type="date" />
               <div className="field-actions">
-                <button className="btn btn--ghost">使用当前时间</button>
-                <button className="btn btn--ghost">清除</button>
+                <button className="btn btn--ghost">复位到 EXIF</button>
               </div>
             </label>
             <label className="field">
@@ -118,7 +148,7 @@ export function App() {
             </label>
           </div>
           <div className="form-actions">
-            <button className="btn">📋 复制上一张信息</button>
+            <button className="btn">复制上一张信息</button>
             <button className="btn btn--ghost" disabled>
               应用到所有选中
             </button>
