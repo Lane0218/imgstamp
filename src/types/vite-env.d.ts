@@ -13,6 +13,7 @@ type ImgStampApi = {
       fileUrl: string;
     }>
   >;
+  getThumbnail: (baseDir: string, relativePath: string, size: number) => Promise<string>;
   openProjectFile: () => Promise<string | null>;
   saveProjectFile: () => Promise<string | null>;
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;

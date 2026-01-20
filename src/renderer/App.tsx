@@ -12,6 +12,7 @@ type PhotoItem = {
   filename: string;
   relativePath: string;
   fileUrl: string;
+  thumbnailUrl?: string;
   selected: boolean;
   meta: PhotoMeta;
 };
@@ -253,6 +254,50 @@ export function App() {
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
   const pageItems = buildPageItems(totalPages, pageIndex);
 
+  useEffect(() => {
+    if (!window.imgstamp || !baseDir) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadThumbnails = async () => {
+      const pending = visiblePhotos.filter((photo) => !photo.thumbnailUrl);
+      if (pending.length === 0) {
+        return;
+      }
+
+      try {
+        const results = await Promise.all(
+          pending.map(async (photo) => ({
+            id: photo.id,
+            url: await window.imgstamp.getThumbnail(baseDir, photo.relativePath, 256),
+          })),
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        const urlMap = new Map(results.map((item) => [item.id, item.url]));
+        setPhotos((prev) =>
+          prev.map((photo) => {
+            const url = urlMap.get(photo.id);
+            return url ? { ...photo, thumbnailUrl: url } : photo;
+          }),
+        );
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadThumbnails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visiblePhotos, baseDir]);
+
   return (
     <div className="app">
       <div className="content">
@@ -308,7 +353,7 @@ export function App() {
                 >
                   <div className={`thumb-status-dot ${dotClass}`} />
                   <div className="thumb-image">
-                    <img src={item.fileUrl} alt={item.filename} loading="lazy" />
+                    <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
                   <div className="thumb-name">{item.filename}</div>
                 </button>

@@ -1,8 +1,9 @@
-import { dialog, ipcMain } from 'electron';
+import { app, dialog, ipcMain } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
+import sharp from 'sharp';
 
 type SaveProjectPayload = {
   projectPath: string;
@@ -50,6 +51,19 @@ async function scanImages(baseDir: string): Promise<ScanResult[]> {
   return results;
 }
 
+async function getThumbnailPath(
+  baseDir: string,
+  relativePath: string,
+  size: number,
+): Promise<{ sourcePath: string; thumbPath: string }> {
+  const cacheDir = path.join(app.getPath('userData'), 'imgstamp-cache');
+  await fs.mkdir(cacheDir, { recursive: true });
+  const key = createHash('sha1').update(`${baseDir}|${relativePath}|${size}`).digest('hex');
+  const thumbPath = path.join(cacheDir, `${key}.jpg`);
+  const sourcePath = path.join(baseDir, relativePath);
+  return { sourcePath, thumbPath };
+}
+
 async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
   const dir = path.dirname(filePath);
   const tempPath = path.join(dir, `${path.basename(filePath)}.tmp`);
@@ -80,6 +94,36 @@ export function registerIpcHandlers(): void {
 
     return scanImages(baseDir);
   });
+
+  ipcMain.handle(
+    'image:thumbnail',
+    async (_event, baseDir: string, relativePath: string, size: number) => {
+      if (!baseDir || !relativePath) {
+        throw new Error('参数不能为空');
+      }
+
+      const safeSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 256;
+      const { sourcePath, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
+
+      try {
+        await fs.access(thumbPath);
+        return pathToFileURL(thumbPath).toString();
+      } catch {
+        // ignore
+      }
+
+      try {
+        await sharp(sourcePath)
+          .resize(safeSize, safeSize, { fit: 'cover' })
+          .jpeg({ quality: 80 })
+          .toFile(thumbPath);
+        return pathToFileURL(thumbPath).toString();
+      } catch (error) {
+        console.error(error);
+        return pathToFileURL(sourcePath).toString();
+      }
+    },
+  );
 
   ipcMain.handle('dialog:openProjectFile', async () => {
     const result = await dialog.showOpenDialog({
