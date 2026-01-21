@@ -128,6 +128,16 @@ export function App() {
       return;
     }
 
+    const getNameFromPath = (filePath: string | null) => {
+      if (!filePath) {
+        return null;
+      }
+      const parts = filePath.split(/[/\\]+/);
+      const fileName = parts[parts.length - 1] || '';
+      const withoutExt = fileName.replace(/\.[^/.]+$/, '');
+      return withoutExt || null;
+    };
+
     const toPhotoItem = (item: {
       id: string;
       filename: string;
@@ -195,7 +205,8 @@ export function App() {
           setMultiSelectedIds(firstId ? [firstId] : []);
           setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(project.baseDir);
-          setProjectName(project.name || '未命名项目');
+          const fallbackName = getNameFromPath(path);
+          setProjectName(project.name || fallbackName || '未命名项目');
           setExportSize(project.exportSize ?? '5L');
           setProjectPath(path);
           setStatusMessage(`已打开项目: ${path}`);
@@ -217,9 +228,10 @@ export function App() {
         if (!targetPath) {
           return;
         }
+        const nameFromPath = getNameFromPath(targetPath) || '未命名项目';
         const projectToSave: ProjectData = {
           version: '1.0',
-          name: projectName,
+          name: nameFromPath,
           baseDir,
           exportSize,
           photos: photos.map((photo) => ({
@@ -232,6 +244,7 @@ export function App() {
         };
         await window.imgstamp.saveProject(targetPath, projectToSave);
         setProjectPath(targetPath);
+        setProjectName(nameFromPath);
         setStatusMessage(`已保存项目: ${targetPath}`);
       } catch (error) {
         setStatusMessage('保存项目失败');
