@@ -1010,34 +1010,34 @@ export function App() {
       </div>
 
       <footer className="status-bar">
-        <div className="status-bar__row">
-          <div>
-            总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
-          </div>
-          <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
+        <div>
+          总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
         </div>
-        {exportProgress && isExporting ? (
-          <div
-            className="status-bar__progress"
-            role="progressbar"
-            aria-label="导出进度"
-            aria-valuemin={0}
-            aria-valuemax={exportProgress.total}
-            aria-valuenow={exportProgress.current}
-          >
+        <div className="status-bar__right">
+          <div className="status-bar__text">{apiAvailable ? statusMessage : '预加载未就绪'}</div>
+          {exportProgress && isExporting ? (
             <div
-              className="status-bar__progress-fill"
-              style={{
-                width: `${Math.min(
-                  100,
-                  exportProgress.total > 0
-                    ? Math.round((exportProgress.current / exportProgress.total) * 100)
-                    : 0,
-                )}%`,
-              }}
-            />
-          </div>
-        ) : null}
+              className="status-bar__progress"
+              role="progressbar"
+              aria-label="导出进度"
+              aria-valuemin={0}
+              aria-valuemax={exportProgress.total}
+              aria-valuenow={exportProgress.current}
+            >
+              <div
+                className="status-bar__progress-fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    exportProgress.total > 0
+                      ? Math.round((exportProgress.current / exportProgress.total) * 100)
+                      : 0,
+                  )}%`,
+                }}
+              />
+            </div>
+          ) : null}
+        </div>
       </footer>
       {exportDialog ? (
         <div className="modal-backdrop" role="presentation">
