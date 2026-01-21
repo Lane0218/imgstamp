@@ -13,7 +13,7 @@ const api = {
     baseDir: string,
     relativePath: string,
     meta: { date: string | null; location: string; description: string },
-    options: { size: '5' | '6'; mode: 'final' | 'original' },
+    options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
   ) => ipcRenderer.invoke('image:preview', baseDir, relativePath, meta, options),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
   saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
@@ -29,7 +29,7 @@ const api = {
       filename: string;
       meta: { date: string | null; location: string; description: string };
     }>,
-    size: '5' | '6',
+    size: '5' | '5L' | '6' | '6L',
   ) =>
     ipcRenderer.invoke('export:start', {
       baseDir,
@@ -57,8 +57,8 @@ const api = {
     ipcRenderer.on('menu:export', listener);
     return () => ipcRenderer.removeListener('menu:export', listener);
   },
-  onMenuSetSize: (callback: (size: '5' | '6') => void) => {
-    const listener = (_event: unknown, size: '5' | '6') => callback(size);
+  onMenuSetSize: (callback: (size: '5' | '5L' | '6' | '6L') => void) => {
+    const listener = (_event: unknown, size: '5' | '5L' | '6' | '6L') => callback(size);
     ipcRenderer.on('menu:set-size', listener);
     return () => ipcRenderer.removeListener('menu:set-size', listener);
   },

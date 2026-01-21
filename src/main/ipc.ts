@@ -14,7 +14,7 @@ type SaveProjectPayload = {
 type ExportPayload = {
   baseDir: string;
   exportDir: string;
-  size: '5' | '6';
+  size: '5' | '5L' | '6' | '6L';
   items: Array<{
     relativePath: string;
     filename: string;
@@ -32,7 +32,9 @@ type ScanResult = {
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png']);
 const EXPORT_SIZE_PX = {
   '5': { width: 1500, height: 1050 },
+  '5L': { width: 1500, height: 1125 },
   '6': { width: 1800, height: 1200 },
+  '6L': { width: 1800, height: 1350 },
 } as const;
 
 function formatExportFolderName(date: Date): string {
@@ -176,7 +178,7 @@ async function buildStampedImage(
 async function buildPreviewImage(
   sourcePath: string,
   meta: { date: string | null; location: string; description: string },
-  options: { size: '5' | '6'; mode: 'final' | 'original' },
+  options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
 ) {
   const exportSize = EXPORT_SIZE_PX[options.size] ?? EXPORT_SIZE_PX['5'];
   const previewWidth = 900;
@@ -317,7 +319,7 @@ export function registerIpcHandlers(): void {
       baseDir: string,
       relativePath: string,
       meta: { date: string | null; location: string; description: string },
-      options: { size: '5' | '6'; mode: 'final' | 'original' },
+      options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
     ) => {
       if (!baseDir || !relativePath) {
         throw new Error('参数不能为空');

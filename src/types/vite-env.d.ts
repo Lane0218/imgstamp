@@ -21,7 +21,7 @@ type ImgStampApi = {
     baseDir: string,
     relativePath: string,
     meta: { date: string | null; location: string; description: string },
-    options: { size: '5' | '6'; mode: 'final' | 'original' },
+    options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
   ) => Promise<string>;
   openProjectFile: () => Promise<string | null>;
   saveProjectFile: () => Promise<string | null>;
@@ -35,13 +35,13 @@ type ImgStampApi = {
       filename: string;
       meta: { date: string | null; location: string; description: string };
     }>,
-    size: '5' | '6',
+    size: '5' | '5L' | '6' | '6L',
   ) => Promise<{ exported: number; failed: number; total: number; outputDir: string }>;
   onMenuOpenDirectory: (callback: () => void) => () => void;
   onMenuOpenProject: (callback: () => void) => () => void;
   onMenuSaveProject: (callback: () => void) => () => void;
   onMenuExport: (callback: () => void) => () => void;
-  onMenuSetSize: (callback: (size: '5' | '6') => void) => () => void;
+  onMenuSetSize: (callback: (size: '5' | '5L' | '6' | '6L') => void) => () => void;
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,
   ) => () => void;

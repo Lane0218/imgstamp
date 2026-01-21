@@ -1,8 +1,8 @@
 import { BrowserWindow, Menu } from 'electron';
 
-type ExportSize = '5' | '6';
+type ExportSize = '5' | '5L' | '6' | '6L';
 
-let currentSize: ExportSize = '5';
+let currentSize: ExportSize = '5L';
 
 function sendToRenderer(mainWindow: BrowserWindow | null, channel: string, payload?: unknown) {
   if (!mainWindow) {
@@ -53,11 +53,31 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
               },
             },
             {
+              label: '大 5 寸 (12.7x9.5cm)',
+              type: 'radio',
+              checked: currentSize === '5L',
+              click: () => {
+                currentSize = '5L';
+                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
+                buildAppMenu(mainWindow);
+              },
+            },
+            {
               label: '6 寸 (15.2x10.2cm)',
               type: 'radio',
               checked: currentSize === '6',
               click: () => {
                 currentSize = '6';
+                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
+                buildAppMenu(mainWindow);
+              },
+            },
+            {
+              label: '大 6 寸 (15.2x11.4cm)',
+              type: 'radio',
+              checked: currentSize === '6L',
+              click: () => {
+                currentSize = '6L';
                 sendToRenderer(mainWindow, 'menu:set-size', currentSize);
                 buildAppMenu(mainWindow);
               },

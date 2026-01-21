@@ -74,6 +74,16 @@ const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] =>
   return result;
 };
 
+const EXPORT_SIZE_META: Record<
+  '5' | '5L' | '6' | '6L',
+  { label: string; ratio: string; cm: string }
+> = {
+  '5': { label: '5寸', ratio: '10:7', cm: '12.7 × 8.9' },
+  '5L': { label: '大5寸', ratio: '4:3', cm: '12.7 × 9.5' },
+  '6': { label: '6寸', ratio: '3:2', cm: '15.2 × 10.2' },
+  '6L': { label: '大6寸', ratio: '4:3', cm: '15.2 × 11.4' },
+};
+
 export function App() {
   const MIN_LEFT_WIDTH = 240;
   const MIN_CENTER_WIDTH = 520;
@@ -83,7 +93,7 @@ export function App() {
   const [projectPath, setProjectPath] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('未命名项目');
   const [baseDir, setBaseDir] = useState<string | null>(null);
-  const [exportSize, setExportSize] = useState<'5' | '6'>('5');
+  const [exportSize, setExportSize] = useState<'5' | '5L' | '6' | '6L'>('5L');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportDialog, setExportDialog] = useState<ExportDialogState | null>(null);
@@ -303,9 +313,10 @@ export function App() {
       }
     };
 
-    const handleSetSize = (size: '5' | '6') => {
+    const handleSetSize = (size: '5' | '5L' | '6' | '6L') => {
       setExportSize(size);
-      setStatusMessage(`已切换导出尺寸: ${size} 寸`);
+      const label = EXPORT_SIZE_META[size]?.label ?? size;
+      setStatusMessage(`已切换导出尺寸: ${label}`);
     };
 
     const unsubOpenDirectory = window.imgstamp.onMenuOpenDirectory(handleOpenDirectory);
@@ -782,13 +793,6 @@ export function App() {
             </div>
           </div>
 
-          <div className="stats">
-            <span>总计: {photos.length} 张</span>
-            <span>已选: {selectedPhotos.length} 张</span>
-            <span>待完善: {incompleteCount} 张</span>
-            <span>尺寸: {exportSize} 寸</span>
-          </div>
-
           <div
             className="thumb-grid"
             ref={gridRef}
@@ -1012,6 +1016,7 @@ export function App() {
       <footer className="status-bar">
         <div>
           总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
+          {` | 尺寸：${EXPORT_SIZE_META[exportSize].label} | 比例：${EXPORT_SIZE_META[exportSize].ratio} | 大小(cm)：${EXPORT_SIZE_META[exportSize].cm}`}
         </div>
         <div className="status-bar__right">
           <div className="status-bar__text">{apiAvailable ? statusMessage : '预加载未就绪'}</div>
