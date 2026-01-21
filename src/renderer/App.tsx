@@ -589,7 +589,6 @@ export function App() {
                     />
                     <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
-                  <div className="thumb-name">{item.filename}</div>
                 </button>
               );
             })}

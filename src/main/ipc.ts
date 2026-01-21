@@ -141,7 +141,7 @@ async function getThumbnailPath(
 ): Promise<{ sourcePath: string; thumbPath: string }> {
   const cacheDir = path.join(app.getPath('userData'), 'imgstamp-cache');
   await fs.mkdir(cacheDir, { recursive: true });
-  const key = createHash('sha1').update(`${baseDir}|${relativePath}|${size}`).digest('hex');
+  const key = createHash('sha1').update(`${baseDir}|${relativePath}|${size}|v2`).digest('hex');
   const thumbPath = path.join(cacheDir, `${key}.jpg`);
   const sourcePath = path.join(baseDir, relativePath);
   return { sourcePath, thumbPath };
@@ -198,7 +198,7 @@ export function registerIpcHandlers(): void {
 
       try {
         const buffer = await sharp(sourcePath)
-          .resize(safeSize, safeSize, { fit: 'contain', background: '#ffffff' })
+          .resize(safeSize, safeSize, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 80 })
           .toBuffer();
         await fs.writeFile(thumbPath, buffer);
