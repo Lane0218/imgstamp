@@ -212,8 +212,57 @@ export function App() {
       }
     };
 
-    const handleExport = () => {
-      setStatusMessage('导出流程暂未实现');
+    const handleExport = async () => {
+      if (!baseDir) {
+        setStatusMessage('请先导入照片');
+        return;
+      }
+
+      const candidates = photos.filter((photo) => photo.selected);
+      if (candidates.length === 0) {
+        setStatusMessage('请先选择要导出的照片');
+        return;
+      }
+
+      const readyItems = candidates.filter(
+        (photo) => photo.meta.date && photo.meta.location && photo.meta.description,
+      );
+      if (readyItems.length === 0) {
+        setStatusMessage('所选照片信息未完善');
+        return;
+      }
+
+      const exportDir = await window.imgstamp.openExportDirectory();
+      if (!exportDir) {
+        return;
+      }
+
+      setStatusMessage(`开始导出 0/${readyItems.length}`);
+      try {
+        const result = await window.imgstamp.startExport(
+          baseDir,
+          exportDir,
+          readyItems.map((photo) => ({
+            relativePath: photo.relativePath,
+            filename: photo.filename,
+            meta: {
+              date: photo.meta.date,
+              location: photo.meta.location,
+              description: photo.meta.description,
+            },
+          })),
+          exportSize,
+        );
+
+        if (result.failed > 0) {
+          setStatusMessage(`导出完成: ${result.exported} 张，失败 ${result.failed} 张`);
+        } else {
+          setStatusMessage(`导出完成: ${result.exported} 张`);
+        }
+      } catch (error) {
+        setStatusMessage('导出失败');
+        console.error(error);
+      }
     };
 
     const handleSetSize = (size: '5' | '6') => {
@@ -226,6 +275,9 @@ export function App() {
     const unsubSaveProject = window.imgstamp.onMenuSaveProject(handleSaveProject);
     const unsubExport = window.imgstamp.onMenuExport(handleExport);
     const unsubSetSize = window.imgstamp.onMenuSetSize(handleSetSize);
+    const unsubExportProgress = window.imgstamp.onExportProgress((payload) => {
+      setStatusMessage(`正在导出 ${payload.current}/${payload.total}`);
+    });
 
     return () => {
       unsubOpenDirectory();
@@ -233,8 +285,9 @@ export function App() {
       unsubSaveProject();
       unsubExport();
       unsubSetSize();
+      unsubExportProgress();
     };
-  }, [projectPath, projectName, baseDir, photos]);
+  }, [projectPath, projectName, baseDir, photos, exportSize]);
 
   useEffect(() => {
     setZoom(1);

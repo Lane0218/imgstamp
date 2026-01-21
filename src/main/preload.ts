@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
+  openExportDirectory: () => ipcRenderer.invoke('dialog:openExportDirectory'),
   scanImages: (baseDir: string) => ipcRenderer.invoke('image:scan', baseDir),
   getThumbnail: (baseDir: string, relativePath: string, size: number) =>
     ipcRenderer.invoke('image:thumbnail', baseDir, relativePath, size),
@@ -19,6 +20,22 @@ const api = {
     ipcRenderer.invoke('project:save', { projectPath, data }),
   loadProject: (projectPath: string) =>
     ipcRenderer.invoke('project:load', projectPath),
+  startExport: (
+    baseDir: string,
+    exportDir: string,
+    items: Array<{
+      relativePath: string;
+      filename: string;
+      meta: { date: string | null; location: string; description: string };
+    }>,
+    size: '5' | '6',
+  ) =>
+    ipcRenderer.invoke('export:start', {
+      baseDir,
+      exportDir,
+      size,
+      items,
+    }),
   onMenuOpenDirectory: (callback: () => void) => {
     const listener = () => callback();
     ipcRenderer.on('menu:open-directory', listener);
@@ -43,6 +60,16 @@ const api = {
     const listener = (_event: unknown, size: '5' | '6') => callback(size);
     ipcRenderer.on('menu:set-size', listener);
     return () => ipcRenderer.removeListener('menu:set-size', listener);
+  },
+  onExportProgress: (
+    callback: (payload: { current: number; total: number; filename: string }) => void,
+  ) => {
+    const listener = (
+      _event: unknown,
+      payload: { current: number; total: number; filename: string },
+    ) => callback(payload);
+    ipcRenderer.on('export:progress', listener);
+    return () => ipcRenderer.removeListener('export:progress', listener);
   },
 };
 

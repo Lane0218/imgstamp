@@ -11,6 +11,17 @@ type SaveProjectPayload = {
   data: unknown;
 };
 
+type ExportPayload = {
+  baseDir: string;
+  exportDir: string;
+  size: '5' | '6';
+  items: Array<{
+    relativePath: string;
+    filename: string;
+    meta: { date: string | null; location: string; description: string };
+  }>;
+};
+
 type ScanResult = {
   id: string;
   filename: string;
@@ -19,6 +30,10 @@ type ScanResult = {
 };
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png']);
+const EXPORT_SIZE_PX = {
+  '5': { width: 1500, height: 1050 },
+  '6': { width: 1800, height: 1200 },
+} as const;
 
 async function scanImages(baseDir: string): Promise<ScanResult[]> {
   const results: ScanResult[] = [];
@@ -90,48 +105,66 @@ function buildPreviewSvg(
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; }\n  </style>\n  <text class="label" x="${padding}" y="${textY}">${line}</text>\n</svg>`;
 }
 
-async function buildPreviewImage(
+async function buildStampedImage(
   sourcePath: string,
   meta: { date: string | null; location: string; description: string },
-  options: { size: '5' | '6'; mode: 'final' | 'original' },
+  size: { width: number; height: number },
+  options: { includeText: boolean; format: 'jpeg' | 'png'; quality?: number },
 ) {
-  const targetWidth = 900;
-  const sizeMap = {
-    '5': { widthCm: 12.7, heightCm: 8.9 },
-    '6': { widthCm: 15.2, heightCm: 10.2 },
-  };
-  const ratio = sizeMap[options.size] ?? sizeMap['5'];
-  const totalHeight = Math.round((targetWidth * ratio.heightCm) / ratio.widthCm);
-  const textAreaHeight = options.mode === 'final' ? Math.round(totalHeight * 0.18) : 0;
-  const imageAreaHeight = totalHeight - textAreaHeight;
+  const textAreaHeight = options.includeText ? Math.round(size.height * 0.18) : 0;
+  const imageAreaHeight = size.height - textAreaHeight;
 
   const base = sharp({
     create: {
-      width: targetWidth,
-      height: totalHeight,
+      width: size.width,
+      height: size.height,
       channels: 3,
       background: '#ffffff',
     },
   });
 
   const resized = await sharp(sourcePath)
-    .resize(targetWidth, imageAreaHeight, { fit: 'contain', background: '#ffffff' })
+    .resize(size.width, imageAreaHeight, { fit: 'contain', background: '#ffffff' })
     .toBuffer();
 
   const overlays = [{ input: resized, top: 0, left: 0 }];
-  if (options.mode === 'final') {
+  if (options.includeText) {
     const svg = buildPreviewSvg(
       meta.date,
       meta.location,
       meta.description,
-      targetWidth,
-      totalHeight,
+      size.width,
+      size.height,
       imageAreaHeight,
     );
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
-  return base.composite(overlays).jpeg({ quality: 85 }).toBuffer();
+  const output = base.composite(overlays);
+  if (options.format === 'png') {
+    return output.png().toBuffer();
+  }
+  return output.jpeg({ quality: options.quality ?? 90 }).toBuffer();
+}
+
+async function buildPreviewImage(
+  sourcePath: string,
+  meta: { date: string | null; location: string; description: string },
+  options: { size: '5' | '6'; mode: 'final' | 'original' },
+) {
+  const exportSize = EXPORT_SIZE_PX[options.size] ?? EXPORT_SIZE_PX['5'];
+  const previewWidth = 900;
+  const scale = previewWidth / exportSize.width;
+  const previewSize = {
+    width: previewWidth,
+    height: Math.round(exportSize.height * scale),
+  };
+
+  return buildStampedImage(sourcePath, meta, previewSize, {
+    includeText: options.mode === 'final',
+    format: 'jpeg',
+    quality: 85,
+  });
 }
 
 async function getThumbnailPath(
@@ -161,6 +194,18 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('dialog:openDirectory', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle('dialog:openExportDirectory', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory'],
     });
 
     if (result.canceled || result.filePaths.length === 0) {
@@ -260,6 +305,47 @@ export function registerIpcHandlers(): void {
       }
     },
   );
+
+  ipcMain.handle('export:start', async (event, payload: ExportPayload) => {
+    if (!payload?.baseDir || !payload?.exportDir) {
+      throw new Error('参数不能为空');
+    }
+
+    const size = EXPORT_SIZE_PX[payload.size] ?? EXPORT_SIZE_PX['5'];
+    let exported = 0;
+    let failed = 0;
+
+    for (let index = 0; index < payload.items.length; index += 1) {
+      const item = payload.items[index];
+      const sourcePath = path.join(payload.baseDir, item.relativePath);
+      const parsed = path.parse(item.relativePath);
+      const ext = parsed.ext.toLowerCase();
+      const outputDir = path.join(payload.exportDir, parsed.dir);
+      const outputExt = ext === '.png' ? '.png' : '.jpg';
+      const outputPath = path.join(outputDir, `${parsed.name}${outputExt}`);
+
+      try {
+        await fs.mkdir(outputDir, { recursive: true });
+        const buffer = await buildStampedImage(sourcePath, item.meta, size, {
+          includeText: true,
+          format: outputExt === '.png' ? 'png' : 'jpeg',
+        });
+        await fs.writeFile(outputPath, buffer);
+        exported += 1;
+      } catch (error) {
+        console.error(error);
+        failed += 1;
+      } finally {
+        event.sender.send('export:progress', {
+          current: index + 1,
+          total: payload.items.length,
+          filename: item.filename,
+        });
+      }
+    }
+
+    return { exported, failed, total: payload.items.length };
+  });
 
   ipcMain.handle('dialog:openProjectFile', async () => {
     const result = await dialog.showOpenDialog({

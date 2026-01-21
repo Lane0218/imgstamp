@@ -5,6 +5,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 type ImgStampApi = {
   openDirectory: () => Promise<string | null>;
+  openExportDirectory: () => Promise<string | null>;
   scanImages: (baseDir: string) => Promise<
     Array<{
       id: string;
@@ -25,11 +26,24 @@ type ImgStampApi = {
   saveProjectFile: () => Promise<string | null>;
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;
   loadProject: (projectPath: string) => Promise<unknown>;
+  startExport: (
+    baseDir: string,
+    exportDir: string,
+    items: Array<{
+      relativePath: string;
+      filename: string;
+      meta: { date: string | null; location: string; description: string };
+    }>,
+    size: '5' | '6',
+  ) => Promise<{ exported: number; failed: number; total: number }>;
   onMenuOpenDirectory: (callback: () => void) => () => void;
   onMenuOpenProject: (callback: () => void) => () => void;
   onMenuSaveProject: (callback: () => void) => () => void;
   onMenuExport: (callback: () => void) => () => void;
   onMenuSetSize: (callback: (size: '5' | '6') => void) => () => void;
+  onExportProgress: (
+    callback: (payload: { current: number; total: number; filename: string }) => void,
+  ) => () => void;
 };
 
 interface Window {
