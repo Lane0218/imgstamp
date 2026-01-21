@@ -101,28 +101,6 @@ select {
   box-shadow: var(--focus-ring);
 }
 
-.icon-btn {
-  padding: 6px;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.layout-icon {
-  display: grid;
-  gap: 2px;
-  width: 18px;
-  height: 12px;
-}
-
-.layout-icon span {
-  display: block;
-  background: var(--muted);
-  border-radius: 2px;
-}
 
 .btn:disabled {
   opacity: 0.7;
@@ -206,21 +184,6 @@ select {
   color: var(--muted);
 }
 
-.view-switch {
-  display: flex;
-  gap: 6px;
-}
-
-.stats {
-  padding: 10px 16px;
-  font-size: 12px;
-  color: var(--muted);
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  background: #f8fafc;
-}
 
 .thumb-grid {
   padding: 16px;
@@ -231,6 +194,7 @@ select {
   flex: 1;
   --thumb-row-height: 140px;
   --thumb-gap: 12px;
+  --thumb-min-width: 180px;
   background: #f0f2f5;
 }
 

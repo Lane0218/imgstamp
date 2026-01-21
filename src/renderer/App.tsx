@@ -88,7 +88,6 @@ export function App() {
   const MIN_LEFT_WIDTH = 240;
   const MIN_CENTER_WIDTH = 520;
   const MIN_RIGHT_WIDTH = 320;
-  const [columns, setColumns] = useState(2);
   const [statusMessage, setStatusMessage] = useState('就绪');
   const [projectPath, setProjectPath] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('未命名项目');
@@ -112,6 +111,8 @@ export function App() {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sizesInitialized = useRef(false);
+  const gridColumnsRef = useRef(2);
+  const [columns, setColumns] = useState(2);
   const dragRef = useRef<{
     side: 'left' | 'right';
     startX: number;
@@ -349,26 +350,36 @@ export function App() {
       return;
     }
 
-    const updatePageSize = () => {
+    const updateLayout = () => {
       const styles = getComputedStyle(grid);
       const rowHeight = parseFloat(styles.getPropertyValue('--thumb-row-height')) || 120;
       const gap = parseFloat(styles.getPropertyValue('--thumb-gap')) || 8;
+      const minColWidth = parseFloat(styles.getPropertyValue('--thumb-min-width')) || 180;
       const paddingTop = parseFloat(styles.paddingTop) || 0;
       const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const availableWidth = grid.clientWidth;
+      const columnsCount = Math.max(
+        1,
+        Math.floor((availableWidth + gap) / (minColWidth + gap)),
+      );
+      if (gridColumnsRef.current !== columnsCount) {
+        gridColumnsRef.current = columnsCount;
+        setColumns(columnsCount);
+      }
       const availableHeight = Math.max(0, grid.clientHeight - paddingTop - paddingBottom);
       const rows = Math.max(1, Math.floor((availableHeight + gap) / (rowHeight + gap)));
-      const nextPageSize = Math.max(1, rows * columns);
+      const nextPageSize = Math.max(1, rows * columnsCount);
       setPageSize(nextPageSize);
     };
 
-    const observer = new ResizeObserver(() => updatePageSize());
+    const observer = new ResizeObserver(() => updateLayout());
     observer.observe(grid);
-    updatePageSize();
+    updateLayout();
 
     return () => {
       observer.disconnect();
     };
-  }, [columns]);
+  }, []);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
@@ -773,23 +784,6 @@ export function App() {
           <div className="panel__header">
             <div>
               <strong>资源管理器</strong>
-            </div>
-            <div className="view-switch">
-              <button
-                className="btn btn--ghost icon-btn"
-                onClick={() => setColumns((prev) => (prev === 4 ? 1 : prev + 1))}
-                aria-label="切换列数"
-                title={`当前 ${columns} 列，点击切换`}
-              >
-                <span
-                  className="layout-icon"
-                  style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-                >
-                  {Array.from({ length: columns }).map((_, index) => (
-                    <span key={index} />
-                  ))}
-                </span>
-              </button>
             </div>
           </div>
 
