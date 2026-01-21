@@ -94,3 +94,6 @@ out/
 
 # Windows
 Thumbs.db
+
+# Codex local skills
+.codex/
