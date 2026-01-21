@@ -250,7 +250,9 @@ export function App() {
       const styles = getComputedStyle(grid);
       const rowHeight = parseFloat(styles.getPropertyValue('--thumb-row-height')) || 120;
       const gap = parseFloat(styles.getPropertyValue('--thumb-gap')) || 8;
-      const availableHeight = grid.clientHeight;
+      const paddingTop = parseFloat(styles.paddingTop) || 0;
+      const paddingBottom = parseFloat(styles.paddingBottom) || 0;
+      const availableHeight = Math.max(0, grid.clientHeight - paddingTop - paddingBottom);
       const rows = Math.max(1, Math.floor((availableHeight + gap) / (rowHeight + gap)));
       const nextPageSize = Math.max(1, rows * columns);
       setPageSize(nextPageSize);
