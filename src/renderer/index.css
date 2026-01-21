@@ -57,9 +57,8 @@ select {
 }
 
 .app {
-  min-height: 720px;
   height: 100%;
-  min-width: 1100px;
+  width: 100%;
   background: var(--bg);
   display: flex;
   flex-direction: column;
@@ -327,6 +326,7 @@ select {
   flex-direction: column;
   padding: 16px;
   gap: 12px;
+  min-height: 0;
 }
 
 .preview-canvas {
@@ -338,7 +338,7 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 320px;
+  min-height: 0;
   overflow: hidden;
   padding: 12px;
 }
@@ -443,6 +443,7 @@ select {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .pager {
@@ -502,23 +503,6 @@ select {
   width: var(--splitter-width);
   cursor: col-resize;
   z-index: 5;
-}
-
-.splitter::after {
-  content: "";
-  position: absolute;
-  left: calc((var(--splitter-width) - 2px) / 2);
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--border);
-  opacity: 0.7;
-}
-
-.splitter:hover::after {
-  background: var(--primary);
-  opacity: 0.9;
 }
 
 .splitter--left {
