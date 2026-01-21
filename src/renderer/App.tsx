@@ -67,6 +67,9 @@ const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] =>
 };
 
 export function App() {
+  const MIN_LEFT_WIDTH = 240;
+  const MIN_CENTER_WIDTH = 520;
+  const MIN_RIGHT_WIDTH = 320;
   const [columns, setColumns] = useState(2);
   const [statusMessage, setStatusMessage] = useState('就绪');
   const [projectPath, setProjectPath] = useState<string | null>(null);
@@ -82,7 +85,16 @@ export function App() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
+  const [columnSizes, setColumnSizes] = useState({ left: MIN_LEFT_WIDTH, right: MIN_RIGHT_WIDTH });
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const sizesInitialized = useRef(false);
+  const dragRef = useRef<{
+    side: 'left' | 'right';
+    startX: number;
+    startLeft: number;
+    startRight: number;
+  } | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
 
@@ -257,6 +269,124 @@ export function App() {
     const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
     setPageIndex((prev) => Math.min(prev, totalPages - 1));
   }, [photos.length, pageSize]);
+
+  const getContentMetrics = () => {
+    const container = contentRef.current;
+    if (!container) {
+      return null;
+    }
+    const styles = getComputedStyle(container);
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
+    const gap = parseFloat(styles.columnGap || styles.gap) || 0;
+    const width = Math.max(0, container.clientWidth - paddingLeft - paddingRight - gap * 2);
+    return { width };
+  };
+
+  useEffect(() => {
+    const container = contentRef.current;
+    if (!container) {
+      return;
+    }
+
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+    const updateSizes = () => {
+      const metrics = getContentMetrics();
+      if (!metrics) {
+        return;
+      }
+      setColumnSizes((prev) => {
+        const maxSideTotal = Math.max(
+          MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH,
+          metrics.width - MIN_CENTER_WIDTH,
+        );
+        let baseLeft = prev.left;
+        let baseRight = prev.right;
+        if (!sizesInitialized.current) {
+          baseLeft = Math.round(metrics.width * 0.22);
+          baseRight = Math.round(metrics.width * 0.25);
+        }
+        const nextLeft = clamp(baseLeft, MIN_LEFT_WIDTH, maxSideTotal - MIN_RIGHT_WIDTH);
+        const nextRight = clamp(baseRight, MIN_RIGHT_WIDTH, maxSideTotal - nextLeft);
+        sizesInitialized.current = true;
+        if (prev.left === nextLeft && prev.right === nextRight) {
+          return prev;
+        }
+        return { left: nextLeft, right: nextRight };
+      });
+    };
+
+    const observer = new ResizeObserver(updateSizes);
+    observer.observe(container);
+    updateSizes();
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+    const handleMove = (event: MouseEvent) => {
+      const dragState = dragRef.current;
+      if (!dragState) {
+        return;
+      }
+      const metrics = getContentMetrics();
+      if (!metrics) {
+        return;
+      }
+      const maxSideTotal = Math.max(
+        MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH,
+        metrics.width - MIN_CENTER_WIDTH,
+      );
+      const delta = event.clientX - dragState.startX;
+      if (dragState.side === 'left') {
+        const nextLeft = clamp(
+          dragState.startLeft + delta,
+          MIN_LEFT_WIDTH,
+          maxSideTotal - dragState.startRight,
+        );
+        setColumnSizes({ left: nextLeft, right: dragState.startRight });
+      } else {
+        const nextRight = clamp(
+          dragState.startRight - delta,
+          MIN_RIGHT_WIDTH,
+          maxSideTotal - dragState.startLeft,
+        );
+        setColumnSizes({ left: dragState.startLeft, right: nextRight });
+      }
+    };
+
+    const handleUp = () => {
+      if (!dragRef.current) {
+        return;
+      }
+      dragRef.current = null;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
+
+  const handleSplitterDown = (side: 'left' | 'right') => (event: React.MouseEvent) => {
+    event.preventDefault();
+    dragRef.current = {
+      side,
+      startX: event.clientX,
+      startLeft: columnSizes.left,
+      startRight: columnSizes.right,
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   useEffect(() => {
     const start = pageIndex * pageSize;
@@ -524,7 +654,16 @@ export function App() {
 
   return (
     <div className="app">
-      <div className="content">
+      <div
+        className="content"
+        ref={contentRef}
+        style={
+          {
+            '--left-width': `${columnSizes.left}px`,
+            '--right-width': `${columnSizes.right}px`,
+          } as React.CSSProperties
+        }
+      >
         <aside className="panel panel--left">
           <div className="panel__header">
             <div>
@@ -756,6 +895,18 @@ export function App() {
             </button>
           </div>
         </aside>
+        <div
+          className="splitter splitter--left"
+          role="separator"
+          aria-label="调整左侧宽度"
+          onMouseDown={handleSplitterDown('left')}
+        />
+        <div
+          className="splitter splitter--right"
+          role="separator"
+          aria-label="调整右侧宽度"
+          onMouseDown={handleSplitterDown('right')}
+        />
       </div>
 
       <footer className="status-bar">
