@@ -22,6 +22,7 @@ type ProjectData = {
   version: string;
   name: string;
   baseDir: string | null;
+  exportSize: '5' | '5L' | '6' | '6L';
   photos: Array<{
     id: string;
     filename: string;
@@ -179,7 +180,7 @@ export function App() {
             const saved = metaMap.get(item.relativePath);
             return {
               ...item,
-              selected: saved?.selected ?? true,
+              selected: saved?.selected ?? false,
               meta: saved?.meta ?? {
                 date: null,
                 location: '',
@@ -195,6 +196,7 @@ export function App() {
           setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(project.baseDir);
           setProjectName(project.name || '未命名项目');
+          setExportSize(project.exportSize ?? '5L');
           setProjectPath(path);
           setStatusMessage(`已打开项目: ${path}`);
         } else {
@@ -219,6 +221,7 @@ export function App() {
           version: '1.0',
           name: projectName,
           baseDir,
+          exportSize,
           photos: photos.map((photo) => ({
             id: photo.id,
             filename: photo.filename,
