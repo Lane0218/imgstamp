@@ -87,6 +87,9 @@ export function App() {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportDialog, setExportDialog] = useState<ExportDialogState | null>(null);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(
+    null,
+  );
   const [currentPhotoId, setCurrentPhotoId] = useState<string | null>(null);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
@@ -251,6 +254,7 @@ export function App() {
       }
 
       setExportDialog(null);
+      setExportProgress({ current: 0, total: readyItems.length });
       setIsExporting(true);
       setStatusMessage(`开始导出 0/${readyItems.length}`);
       try {
@@ -295,6 +299,7 @@ export function App() {
         console.error(error);
       } finally {
         setIsExporting(false);
+        setExportProgress(null);
       }
     };
 
@@ -310,6 +315,7 @@ export function App() {
     const unsubSetSize = window.imgstamp.onMenuSetSize(handleSetSize);
     const unsubExportProgress = window.imgstamp.onExportProgress((payload) => {
       setStatusMessage(`正在导出 ${payload.current}/${payload.total}`);
+      setExportProgress({ current: payload.current, total: payload.total });
     });
 
     return () => {
@@ -1004,10 +1010,34 @@ export function App() {
       </div>
 
       <footer className="status-bar">
-        <div>
-          总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
+        <div className="status-bar__row">
+          <div>
+            总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
+          </div>
+          <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
         </div>
-        <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
+        {exportProgress && isExporting ? (
+          <div
+            className="status-bar__progress"
+            role="progressbar"
+            aria-label="导出进度"
+            aria-valuemin={0}
+            aria-valuemax={exportProgress.total}
+            aria-valuenow={exportProgress.current}
+          >
+            <div
+              className="status-bar__progress-fill"
+              style={{
+                width: `${Math.min(
+                  100,
+                  exportProgress.total > 0
+                    ? Math.round((exportProgress.current / exportProgress.total) * 100)
+                    : 0,
+                )}%`,
+              }}
+            />
+          </div>
+        ) : null}
       </footer>
       {exportDialog ? (
         <div className="modal-backdrop" role="presentation">

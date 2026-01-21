@@ -434,16 +434,36 @@ select {
 }
 
 .status-bar {
-  height: 28px;
-  padding: 0 20px;
+  min-height: 36px;
+  padding: 6px 20px 8px;
   background: var(--panel-bg);
   border-top: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted);
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.status-bar__row {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-shrink: 0;
+}
+
+.status-bar__progress {
+  position: relative;
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.status-bar__progress-fill {
+  height: 100%;
+  background: #3b82f6;
+  transition: width 0.2s ease;
 }
 
 .pager {
