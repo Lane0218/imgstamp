@@ -72,6 +72,7 @@ const api = {
     ipcRenderer.on('export:progress', listener);
     return () => ipcRenderer.removeListener('export:progress', listener);
   },
+  setWindowTitle: (projectName: string) => ipcRenderer.invoke('app:setTitle', projectName),
 };
 
 contextBridge.exposeInMainWorld('imgstamp', api);

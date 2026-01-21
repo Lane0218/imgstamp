@@ -45,6 +45,7 @@ type ImgStampApi = {
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,
   ) => () => void;
+  setWindowTitle: (projectName: string) => Promise<void>;
 };
 
 interface Window {

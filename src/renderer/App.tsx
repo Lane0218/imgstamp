@@ -167,6 +167,8 @@ export function App() {
           setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(dir);
           setProjectPath(null);
+          setProjectName('未命名项目');
+          await window.imgstamp.setWindowTitle('未命名项目');
           setStatusMessage(`已导入目录: ${dir}`);
         }
       } catch (error) {
@@ -206,10 +208,12 @@ export function App() {
           setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(project.baseDir);
           const fallbackName = getNameFromPath(path);
-          setProjectName(project.name || fallbackName || '未命名项目');
+          const nextName = project.name || fallbackName || '未命名项目';
+          setProjectName(nextName);
           setExportSize(project.exportSize ?? '5L');
           setProjectPath(path);
           setStatusMessage(`已打开项目: ${path}`);
+          await window.imgstamp.setWindowTitle(nextName);
         } else {
           setStatusMessage('项目缺少基础目录');
         }
@@ -246,6 +250,7 @@ export function App() {
         setProjectPath(targetPath);
         setProjectName(nameFromPath);
         setStatusMessage(`已保存项目: ${targetPath}`);
+        await window.imgstamp.setWindowTitle(nameFromPath);
       } catch (error) {
         setStatusMessage('保存项目失败');
         console.error(error);

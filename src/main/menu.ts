@@ -12,6 +12,14 @@ function sendToRenderer(mainWindow: BrowserWindow | null, channel: string, paylo
   mainWindow.webContents.send(channel, payload);
 }
 
+export function setWindowTitle(mainWindow: BrowserWindow | null, projectName: string): void {
+  if (!mainWindow) {
+    return;
+  }
+  const title = projectName ? `ImgStamp - ${projectName}` : 'ImgStamp';
+  mainWindow.setTitle(title);
+}
+
 export function buildAppMenu(mainWindow: BrowserWindow | null): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     {

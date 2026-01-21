@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './ipc';
-import { buildAppMenu } from './menu';
+import { buildAppMenu, setWindowTitle } from './menu';
 
 if (started) {
   app.quit();
@@ -38,6 +38,7 @@ app.whenReady().then(() => {
   createWindow();
   registerIpcHandlers();
   buildAppMenu(mainWindow);
+  setWindowTitle(mainWindow, '未命名项目');
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

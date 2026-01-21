@@ -1,10 +1,11 @@
-import { app, dialog, ipcMain, shell } from 'electron';
+import { app, dialog, ipcMain, shell, BrowserWindow } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import exifr from 'exifr';
+import { setWindowTitle } from './menu';
 
 type SaveProjectPayload = {
   projectPath: string;
@@ -241,6 +242,12 @@ export function registerIpcHandlers(): void {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('app:setTitle', async (event, projectName: string) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    setWindowTitle(window, projectName || '未命名项目');
+    return true;
   });
 
   ipcMain.handle('system:openPath', async (_event, targetPath: string) => {
