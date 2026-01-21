@@ -702,11 +702,11 @@ export function App() {
           >
             {visiblePhotos.map((item, index) => {
               const isComplete = Boolean(item.meta.date && item.meta.location && item.meta.description);
-              const dotClass = item.selected
+              const selectClass = item.selected
                 ? isComplete
-                  ? 'thumb-status-dot--ok'
-                  : 'thumb-status-dot--warn'
-                : 'thumb-status-dot--hidden';
+                  ? 'thumb-select thumb-select--ok'
+                  : 'thumb-select thumb-select--warn'
+                : 'thumb-select';
               const isMultiSelected = multiSelectedSet.has(item.id);
               const isActive = item.id === currentPhotoId;
               return (
@@ -719,10 +719,16 @@ export function App() {
                   onClick={(event) => handleThumbnailClick(event, pageStart + index, item.id)}
                 >
                   <div className="thumb-frame">
-                    <div className={`thumb-status-dot ${dotClass}`} />
                     <button
                       type="button"
-                      className={`thumb-select ${item.selected ? 'is-selected' : ''}`}
+                      className={selectClass}
+                      aria-label={
+                        item.selected
+                          ? isComplete
+                            ? '已选中，信息完整'
+                            : '已选中，信息不完整'
+                          : '未选中'
+                      }
                       onClick={(event) => {
                         event.stopPropagation();
                         setPhotos((prev) =>

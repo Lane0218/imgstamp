@@ -280,29 +280,6 @@ select {
   border-radius: 2px;
 }
 
-.thumb-status-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  border: 2px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
-}
-
-.thumb-status-dot--ok {
-  background: var(--success);
-}
-
-.thumb-status-dot--warn {
-  background: var(--warning);
-}
-
-.thumb-status-dot--hidden {
-  opacity: 0;
-}
-
 .thumb-select {
   position: absolute;
   bottom: 8px;
@@ -310,17 +287,23 @@ select {
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  border: 1px solid #93c5fd;
-  background: rgba(147, 197, 253, 0.15);
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
 }
 
-.thumb-select.is-selected {
-  background: #93c5fd;
-  border-color: #93c5fd;
+.thumb-select--warn {
+  background: var(--warning);
+  border-color: var(--warning);
+}
+
+.thumb-select--ok {
+  background: var(--success);
+  border-color: var(--success);
 }
 
 .thumb-select:focus-visible {
