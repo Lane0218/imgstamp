@@ -246,6 +246,12 @@ export function registerIpcHandlers(): void {
       }
       const sourcePath = path.join(baseDir, relativePath);
       try {
+        if (options.mode === 'original') {
+          const ext = path.extname(sourcePath).toLowerCase();
+          const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
+          const buffer = await fs.readFile(sourcePath);
+          return `data:${mime};base64,${buffer.toString('base64')}`;
+        }
         const buffer = await buildPreviewImage(sourcePath, meta, options);
         return `data:image/jpeg;base64,${buffer.toString('base64')}`;
       } catch (error) {

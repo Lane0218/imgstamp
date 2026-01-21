@@ -381,11 +381,6 @@ export function App() {
       return;
     }
 
-    if (previewMode === 'original') {
-      setPreviewUrl(currentPhoto.fileUrl);
-      return;
-    }
-
     let cancelled = false;
     const handle = setTimeout(async () => {
       try {
