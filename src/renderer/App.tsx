@@ -80,7 +80,7 @@ export function App() {
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>('final');
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
@@ -381,6 +381,12 @@ export function App() {
       return;
     }
 
+    if (previewMode === 'original') {
+      setPreviewUrl(currentPhoto.fileUrl);
+      return;
+    }
+
+    let cancelled = false;
     const handle = setTimeout(async () => {
       try {
         const url = await window.imgstamp.getPreview(
@@ -393,13 +399,18 @@ export function App() {
           },
           { size: exportSize, mode: previewMode },
         );
-        setPreviewUrl(url || null);
+        if (!cancelled) {
+          setPreviewUrl(url || null);
+        }
       } catch (error) {
         console.error(error);
       }
     }, 300);
 
-    return () => clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
   }, [
     baseDir,
     currentPhoto?.id,
@@ -656,11 +667,27 @@ export function App() {
                   <line x1="8" y1="11" x2="14" y2="11" />
                 </svg>
               </button>
-              <button className="icon-control" aria-label="查看原图" onClick={handleToggleOriginal}>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+              <button
+                className="icon-control"
+                aria-label={previewMode === 'original' ? '切换到渲染预览' : '切换到原图预览'}
+                title={previewMode === 'original' ? '切换到渲染预览' : '切换到原图预览'}
+                onClick={handleToggleOriginal}
+              >
+                {previewMode === 'original' ? (
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="11" rx="2" />
+                    <circle cx="8" cy="8.5" r="1.5" />
+                    <path d="M3 13l5-4.5 4 3.5 5-4.5 4 4" />
+                    <line x1="6" y1="18" x2="18" y2="18" />
+                    <line x1="6" y1="21" x2="14" y2="21" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="13" rx="2" />
+                    <circle cx="8" cy="9" r="1.5" />
+                    <path d="M3 15l5-5 4 4 5-5 4 4" />
+                  </svg>
+                )}
               </button>
             </div>
             <div className="preview-canvas">
