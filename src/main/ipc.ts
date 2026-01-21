@@ -35,6 +35,32 @@ const EXPORT_SIZE_PX = {
   '6': { width: 1800, height: 1200 },
 } as const;
 
+function formatExportFolderName(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const mm = pad(date.getMonth() + 1);
+  const dd = pad(date.getDate());
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  return `ImgStamp导出-${yyyy}${mm}${dd}-${hh}${min}`;
+}
+
+async function ensureUniqueDir(basePath: string): Promise<string> {
+  let candidate = basePath;
+  let counter = 1;
+  while (true) {
+    try {
+      await fs.access(candidate);
+      candidate = `${basePath}-${counter}`;
+      counter += 1;
+    } catch {
+      break;
+    }
+  }
+  await fs.mkdir(candidate, { recursive: true });
+  return candidate;
+}
+
 async function scanImages(baseDir: string): Promise<ScanResult[]> {
   const results: ScanResult[] = [];
 
@@ -312,6 +338,8 @@ export function registerIpcHandlers(): void {
     }
 
     const size = EXPORT_SIZE_PX[payload.size] ?? EXPORT_SIZE_PX['5'];
+    const baseOutputDir = path.join(payload.exportDir, formatExportFolderName(new Date()));
+    const outputRoot = await ensureUniqueDir(baseOutputDir);
     let exported = 0;
     let failed = 0;
 
@@ -320,7 +348,7 @@ export function registerIpcHandlers(): void {
       const sourcePath = path.join(payload.baseDir, item.relativePath);
       const parsed = path.parse(item.relativePath);
       const ext = parsed.ext.toLowerCase();
-      const outputDir = path.join(payload.exportDir, parsed.dir);
+      const outputDir = path.join(outputRoot, parsed.dir);
       const outputExt = ext === '.png' ? '.png' : '.jpg';
       const outputPath = path.join(outputDir, `${parsed.name}${outputExt}`);
 
@@ -344,7 +372,7 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    return { exported, failed, total: payload.items.length };
+    return { exported, failed, total: payload.items.length, outputDir: outputRoot };
   });
 
   ipcMain.handle('dialog:openProjectFile', async () => {

@@ -34,6 +34,14 @@ type ProjectData = {
 type PageItem = number | 'ellipsis';
 
 type PreviewMode = 'final' | 'original';
+type ExportDialogState = {
+  title: string;
+  exported: number;
+  failed: number;
+  total: number;
+  outputDir?: string;
+  note?: string;
+};
 
 const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
   if (totalPages <= 7) {
@@ -77,6 +85,8 @@ export function App() {
   const [baseDir, setBaseDir] = useState<string | null>(null);
   const [exportSize, setExportSize] = useState<'5' | '6'>('5');
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportDialog, setExportDialog] = useState<ExportDialogState | null>(null);
   const [currentPhotoId, setCurrentPhotoId] = useState<string | null>(null);
   const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
@@ -213,6 +223,9 @@ export function App() {
     };
 
     const handleExport = async () => {
+      if (isExporting) {
+        return;
+      }
       if (!baseDir) {
         setStatusMessage('请先导入照片');
         return;
@@ -227,7 +240,7 @@ export function App() {
       const readyItems = candidates.filter(
         (photo) => photo.meta.date && photo.meta.location && photo.meta.description,
       );
-      if (readyItems.length === 0) {
+      if (readyItems.length !== candidates.length) {
         setStatusMessage('所选照片信息未完善');
         return;
       }
@@ -237,6 +250,8 @@ export function App() {
         return;
       }
 
+      setExportDialog(null);
+      setIsExporting(true);
       setStatusMessage(`开始导出 0/${readyItems.length}`);
       try {
         const result = await window.imgstamp.startExport(
@@ -254,14 +269,32 @@ export function App() {
           exportSize,
         );
 
-        if (result.failed > 0) {
-          setStatusMessage(`导出完成: ${result.exported} 张，失败 ${result.failed} 张`);
-        } else {
-          setStatusMessage(`导出完成: ${result.exported} 张`);
-        }
+        const hasFailure = result.failed > 0;
+        const title = hasFailure ? '导出完成（部分失败）' : '导出完成';
+        setExportDialog({
+          title,
+          exported: result.exported,
+          failed: result.failed,
+          total: result.total,
+          outputDir: result.outputDir,
+        });
+        setStatusMessage(
+          hasFailure
+            ? `导出完成: ${result.exported} 张，失败 ${result.failed} 张`
+            : `导出完成: ${result.exported} 张`,
+        );
       } catch (error) {
         setStatusMessage('导出失败');
+        setExportDialog({
+          title: '导出失败',
+          exported: 0,
+          failed: 0,
+          total: 0,
+          note: '请检查输出目录权限或图片是否损坏',
+        });
         console.error(error);
+      } finally {
+        setIsExporting(false);
       }
     };
 
@@ -287,7 +320,7 @@ export function App() {
       unsubSetSize();
       unsubExportProgress();
     };
-  }, [projectPath, projectName, baseDir, photos, exportSize]);
+  }, [projectPath, projectName, baseDir, photos, exportSize, isExporting]);
 
   useEffect(() => {
     setZoom(1);
@@ -976,6 +1009,26 @@ export function App() {
         </div>
         <div>{apiAvailable ? statusMessage : '预加载未就绪'}</div>
       </footer>
+      {exportDialog ? (
+        <div className="modal-backdrop" role="presentation">
+          <div className="modal" role="dialog" aria-modal="true" aria-label={exportDialog.title}>
+            <div className="modal__title">{exportDialog.title}</div>
+            <div className="modal__stats">
+              成功 {exportDialog.exported} 张 · 失败 {exportDialog.failed} 张 · 总计{' '}
+              {exportDialog.total} 张
+            </div>
+            {exportDialog.outputDir ? (
+              <div className="modal__path">输出目录：{exportDialog.outputDir}</div>
+            ) : null}
+            {exportDialog.note ? <div className="modal__note">{exportDialog.note}</div> : null}
+            <div className="modal__actions">
+              <button className="btn" onClick={() => setExportDialog(null)}>
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

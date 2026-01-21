@@ -35,7 +35,7 @@ type ImgStampApi = {
       meta: { date: string | null; location: string; description: string };
     }>,
     size: '5' | '6',
-  ) => Promise<{ exported: number; failed: number; total: number }>;
+  ) => Promise<{ exported: number; failed: number; total: number; outputDir: string }>;
   onMenuOpenDirectory: (callback: () => void) => () => void;
   onMenuOpenProject: (callback: () => void) => () => void;
   onMenuSaveProject: (callback: () => void) => () => void;
