@@ -6,6 +6,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 type ImgStampApi = {
   openDirectory: () => Promise<string | null>;
   openExportDirectory: () => Promise<string | null>;
+  openPath: (targetPath: string) => Promise<string>;
   scanImages: (baseDir: string) => Promise<
     Array<{
       id: string;

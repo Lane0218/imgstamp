@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 const api = {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openExportDirectory: () => ipcRenderer.invoke('dialog:openExportDirectory'),
+  openPath: (targetPath: string) => ipcRenderer.invoke('system:openPath', targetPath),
   scanImages: (baseDir: string) => ipcRenderer.invoke('image:scan', baseDir),
   getThumbnail: (baseDir: string, relativePath: string, size: number) =>
     ipcRenderer.invoke('image:thumbnail', baseDir, relativePath, size),

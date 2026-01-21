@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain } from 'electron';
+import { app, dialog, ipcMain, shell } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
@@ -239,6 +239,13 @@ export function registerIpcHandlers(): void {
     }
 
     return result.filePaths[0];
+  });
+
+  ipcMain.handle('system:openPath', async (_event, targetPath: string) => {
+    if (!targetPath) {
+      throw new Error('路径不能为空');
+    }
+    return shell.openPath(targetPath);
   });
 
   ipcMain.handle('image:scan', async (_event, baseDir: string) => {

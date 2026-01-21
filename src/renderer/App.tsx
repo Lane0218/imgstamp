@@ -1022,6 +1022,24 @@ export function App() {
             ) : null}
             {exportDialog.note ? <div className="modal__note">{exportDialog.note}</div> : null}
             <div className="modal__actions">
+              {exportDialog.outputDir ? (
+                <button
+                  className="btn btn--ghost"
+                  onClick={async () => {
+                    if (!window.imgstamp || !exportDialog.outputDir) {
+                      return;
+                    }
+                    try {
+                      await window.imgstamp.openPath(exportDialog.outputDir);
+                    } catch (error) {
+                      setStatusMessage('打开输出目录失败');
+                      console.error(error);
+                    }
+                  }}
+                >
+                  打开输出目录
+                </button>
+              ) : null}
               <button className="btn" onClick={() => setExportDialog(null)}>
                 知道了
               </button>
