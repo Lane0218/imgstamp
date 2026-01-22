@@ -180,8 +180,6 @@ export function Launcher() {
           <div className="launcher__logo">
             <img src={logoUrl} alt="ImgStamp" />
           </div>
-          <div className="launcher__title">ImgStamp</div>
-          <div className="launcher__subtitle">批量加白边与文字标注</div>
         </div>
 
         <div className="launcher-card">

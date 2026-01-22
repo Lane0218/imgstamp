@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './ipc';
@@ -27,11 +28,15 @@ const loadRenderer = (window: BrowserWindow, view: 'main' | 'launcher') => {
 };
 
 const getWindowIcon = () => {
-  try {
-    return path.join(app.getAppPath(), 'assets', 'icon.ico');
-  } catch {
-    return undefined;
-  }
+  const iconName =
+    process.platform === 'darwin' ? 'icon.icns' : process.platform === 'win32' ? 'icon.ico' : 'icon.png';
+  const candidates = [
+    path.join(process.resourcesPath, 'assets', iconName),
+    path.join(app.getAppPath(), 'assets', iconName),
+    path.join(process.cwd(), 'assets', iconName),
+  ];
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  return found;
 };
 
 const createMainWindow = () => {
