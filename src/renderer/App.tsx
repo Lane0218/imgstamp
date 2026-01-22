@@ -379,10 +379,8 @@ export function App() {
       const paddingTop = parseFloat(styles.paddingTop) || 0;
       const paddingBottom = parseFloat(styles.paddingBottom) || 0;
       const availableWidth = grid.clientWidth;
-      const columnsCount = Math.max(
-        1,
-        Math.floor((availableWidth + gap) / (minColWidth + gap)),
-      );
+      const rawColumns = Math.floor((availableWidth + gap) / (minColWidth + gap));
+      const columnsCount = Math.min(4, Math.max(2, rawColumns));
       if (gridColumnsRef.current !== columnsCount) {
         gridColumnsRef.current = columnsCount;
         setColumns(columnsCount);
@@ -803,8 +801,16 @@ export function App() {
       >
         <aside className="panel panel--left">
           <div className="panel__header">
-            <div>
-              <strong>资源管理器</strong>
+            <div className="panel__title">资源管理器</div>
+            <div className="thumb-legend" aria-label="状态图例">
+              <span className="thumb-legend__item">
+                <i className="thumb-legend__dot thumb-legend__dot--ok" aria-hidden="true" />
+                完成
+              </span>
+              <span className="thumb-legend__item">
+                <i className="thumb-legend__dot thumb-legend__dot--warn" aria-hidden="true" />
+                待完善
+              </span>
             </div>
           </div>
 
@@ -842,6 +848,7 @@ export function App() {
                             : '已选中，信息不完整'
                           : '未选中'
                       }
+                      aria-pressed={item.selected}
                       onClick={(event) => {
                         event.stopPropagation();
                         setPhotos((prev) =>
@@ -899,9 +906,7 @@ export function App() {
 
         <section className="panel panel--center">
           <div className="panel__header">
-            <div>
-              <strong>实时预览</strong>
-            </div>
+            <div className="panel__title">实时预览</div>
           </div>
           <div className="preview-area">
             <div className="preview-toolbar">
@@ -957,52 +962,60 @@ export function App() {
 
         <aside className="panel panel--right">
           <div className="panel__header">
-            <div>
-              <strong>属性编辑</strong>
-            </div>
+            <div className="panel__title">属性编辑</div>
           </div>
           <div className="meta">
             <div className="meta__title">{currentPhoto?.filename ?? '未选择图片'}</div>
             <div className="meta__sub">已选中 {multiSelectedCount} 张图片</div>
           </div>
           <div className="form">
-            <label className="field">
-              <span>拍摄日期</span>
-              <input
-                type="date"
-                value={currentPhoto?.meta.date ?? ''}
-                onChange={(event) => updateCurrentMeta({ date: event.target.value || null })}
-                disabled={!currentPhoto}
-              />
-              <div className="field-actions">
-                <button className="btn btn--ghost" onClick={handleResetExif} disabled={!currentPhoto}>
-                  复位到 EXIF
-                </button>
-              </div>
-            </label>
-            <label className="field">
-              <span>拍摄地点</span>
-              <input
-                type="text"
-                placeholder="例如：上海市"
-                value={currentPhoto?.meta.location ?? ''}
-                onChange={(event) => updateCurrentMeta({ location: event.target.value })}
-                disabled={!currentPhoto}
-              />
-            </label>
-            <label className="field">
-              <span>描述</span>
-              <input
-                type="text"
-                placeholder="记录当下的心情或事件（限单行）..."
-                value={currentPhoto?.meta.description ?? ''}
-                onChange={(event) => updateCurrentMeta({ description: event.target.value })}
-                disabled={!currentPhoto}
-              />
-            </label>
+            <div className="form-group">
+              <div className="form-group__title">拍摄信息</div>
+              <label className="field">
+                <span>拍摄日期</span>
+                <input
+                  type="date"
+                  value={currentPhoto?.meta.date ?? ''}
+                  onChange={(event) => updateCurrentMeta({ date: event.target.value || null })}
+                  disabled={!currentPhoto}
+                />
+                <div className="field-actions">
+                  <button
+                    className="btn btn--ghost"
+                    onClick={handleResetExif}
+                    disabled={!currentPhoto}
+                  >
+                    复位到 EXIF
+                  </button>
+                </div>
+              </label>
+              <label className="field">
+                <span>拍摄地点</span>
+                <input
+                  type="text"
+                  placeholder="例如：上海市"
+                  value={currentPhoto?.meta.location ?? ''}
+                  onChange={(event) => updateCurrentMeta({ location: event.target.value })}
+                  disabled={!currentPhoto}
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <div className="form-group__title">描述</div>
+              <label className="field">
+                <span>描述</span>
+                <input
+                  type="text"
+                  placeholder="记录当下的心情或事件（限单行）..."
+                  value={currentPhoto?.meta.description ?? ''}
+                  onChange={(event) => updateCurrentMeta({ description: event.target.value })}
+                  disabled={!currentPhoto}
+                />
+              </label>
+            </div>
           </div>
           <div className="form-actions">
-            <button className="btn" onClick={handleCopyPrev} disabled={!currentPhoto}>
+            <button className="btn btn--primary" onClick={handleCopyPrev} disabled={!currentPhoto}>
               复制上一张信息
             </button>
             <button
@@ -1090,7 +1103,7 @@ export function App() {
                   打开输出目录
                 </button>
               ) : null}
-              <button className="btn" onClick={() => setExportDialog(null)}>
+              <button className="btn btn--primary" onClick={() => setExportDialog(null)}>
                 知道了
               </button>
             </div>
