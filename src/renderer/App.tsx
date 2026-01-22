@@ -540,6 +540,7 @@ export function App() {
   const incompleteCount = selectedPhotos.filter(
     (photo) => !photo.meta.date || !photo.meta.location || !photo.meta.description,
   ).length;
+  const canExport = Boolean(baseDir && selectedPhotos.length > 0 && incompleteCount === 0);
   const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
   const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
   const pageStart = pageIndex * pageSize;
@@ -908,6 +909,13 @@ export function App() {
           <div className="panel__header">
             <div className="panel__title">实时预览</div>
             <div className="panel__actions">
+              <button
+                className="btn btn--primary btn--compact"
+                onClick={handleExport}
+                disabled={!canExport || isExporting}
+              >
+                {isExporting ? '导出中...' : '导出成品'}
+              </button>
               <button className="icon-control" aria-label="放大" onClick={handleZoomIn}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="7" />

@@ -1,8 +1,4 @@
-import { BrowserWindow, Menu } from 'electron';
-
-type ExportSize = '5' | '5L' | '6' | '6L';
-
-let currentSize: ExportSize = '5L';
+import { app, BrowserWindow, Menu, dialog } from 'electron';
 
 function sendToRenderer(mainWindow: BrowserWindow | null, channel: string, payload?: unknown) {
   if (!mainWindow) {
@@ -21,12 +17,19 @@ export function setWindowTitle(mainWindow: BrowserWindow | null, projectName: st
 }
 
 export function buildAppMenu(mainWindow: BrowserWindow | null): void {
+  const showMessage = (options: Electron.MessageBoxOptions) => {
+    if (!mainWindow) {
+      return;
+    }
+    void dialog.showMessageBox(mainWindow, options);
+  };
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: '文件',
+      label: '项目',
       submenu: [
         {
-          label: '打开文件夹',
+          label: '新建项目',
           accelerator: 'CmdOrCtrl+O',
           click: () => sendToRenderer(mainWindow, 'menu:open-directory'),
         },
@@ -45,58 +48,33 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
       ],
     },
     {
-      label: '导出',
+      label: '帮助',
       submenu: [
         {
-          label: '目标尺寸',
-          submenu: [
-            {
-              label: '5 寸 (12.7x8.9cm)',
-              type: 'radio',
-              checked: currentSize === '5',
-              click: () => {
-                currentSize = '5';
-                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
-                buildAppMenu(mainWindow);
-              },
-            },
-            {
-              label: '大 5 寸 (12.7x9.5cm)',
-              type: 'radio',
-              checked: currentSize === '5L',
-              click: () => {
-                currentSize = '5L';
-                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
-                buildAppMenu(mainWindow);
-              },
-            },
-            {
-              label: '6 寸 (15.2x10.2cm)',
-              type: 'radio',
-              checked: currentSize === '6',
-              click: () => {
-                currentSize = '6';
-                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
-                buildAppMenu(mainWindow);
-              },
-            },
-            {
-              label: '大 6 寸 (15.2x11.4cm)',
-              type: 'radio',
-              checked: currentSize === '6L',
-              click: () => {
-                currentSize = '6L';
-                sendToRenderer(mainWindow, 'menu:set-size', currentSize);
-                buildAppMenu(mainWindow);
-              },
-            },
-          ],
-        },
-        { type: 'separator' },
         {
-          label: '导出成品',
-          accelerator: 'CmdOrCtrl+E',
-          click: () => sendToRenderer(mainWindow, 'menu:export'),
+          label: '关于 ImgStamp',
+          click: () =>
+            showMessage({
+              type: 'info',
+              title: '关于 ImgStamp',
+              message: 'ImgStamp',
+              detail: `版本 ${app.getVersion()}\n本地照片批量加白边与文字标注工具。`,
+            }),
+        },
+        {
+          label: '快捷键',
+          click: () =>
+            showMessage({
+              type: 'info',
+              title: '快捷键',
+              message: '常用快捷键',
+              detail:
+                'Ctrl/Cmd + O：新建项目（打开文件夹）\n' +
+                'Ctrl/Cmd + Shift + O：打开项目\n' +
+                'Ctrl/Cmd + S：保存项目\n' +
+                '← / →：切换选中图片\n' +
+                'Space：标记/取消标记选中',
+            }),
         },
       ],
     },
