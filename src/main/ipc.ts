@@ -45,8 +45,21 @@ const EXPORT_SIZE_PX = {
   '6': { width: 1800, height: 1200 },
   '6L': { width: 1800, height: 1350 },
 } as const;
+const LAYOUT_RATIOS = {
+  side: 0.055,
+  bottom: 0.14,
+  rightTextMin: 0.18,
+} as const;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
+
+type LayoutMode = 'bottom' | 'right';
+type Layout = {
+  mode: LayoutMode;
+  margins: { top: number; right: number; bottom: number; left: number };
+  imageArea: { x: number; y: number; width: number; height: number };
+  textArea: { x: number; y: number; width: number; height: number };
+};
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -120,6 +133,56 @@ function formatExifDate(value: Date | string | number | null | undefined): strin
   return `${year}-${month}-${day}`;
 }
 
+function buildLayout(
+  canvas: { width: number; height: number },
+  options: { includeText: boolean; mode: LayoutMode },
+): Layout {
+  const sideX = Math.round(canvas.width * LAYOUT_RATIOS.side);
+  const sideY = Math.round(canvas.height * LAYOUT_RATIOS.side);
+  let top = sideY;
+  let bottom = sideY;
+  let left = sideX;
+  let right = sideX;
+
+  if (options.includeText && options.mode === 'bottom') {
+    bottom = Math.round(canvas.height * LAYOUT_RATIOS.bottom);
+  }
+
+  if (options.includeText && options.mode === 'right') {
+    right = Math.max(Math.round(canvas.width * LAYOUT_RATIOS.rightTextMin), right);
+  }
+
+  const imageArea = {
+    x: left,
+    y: top,
+    width: canvas.width - left - right,
+    height: canvas.height - top - bottom,
+  };
+
+  const textArea = options.includeText
+    ? options.mode === 'bottom'
+      ? {
+          x: left,
+          y: canvas.height - bottom,
+          width: canvas.width - left - right,
+          height: bottom,
+        }
+      : {
+          x: canvas.width - right,
+          y: top,
+          width: right,
+          height: canvas.height - top - bottom,
+        }
+    : { x: 0, y: 0, width: 0, height: 0 };
+
+  return {
+    mode: options.mode,
+    margins: { top, right, bottom, left },
+    imageArea,
+    textArea,
+  };
+}
+
 function buildPreviewSvg(
   date: string | null,
   location: string,
@@ -150,8 +213,10 @@ async function buildStampedImage(
   size: { width: number; height: number },
   options: { includeText: boolean; format: 'jpeg' | 'png'; quality?: number },
 ) {
-  const textAreaHeight = options.includeText ? Math.round(size.height * 0.18) : 0;
-  const imageAreaHeight = size.height - textAreaHeight;
+  const layout = buildLayout(
+    { width: size.width, height: size.height },
+    { includeText: options.includeText, mode: 'bottom' },
+  );
 
   const base = sharp({
     create: {
@@ -163,10 +228,13 @@ async function buildStampedImage(
   });
 
   const resized = await sharp(sourcePath)
-    .resize(size.width, imageAreaHeight, { fit: 'contain', background: '#ffffff' })
+    .resize(layout.imageArea.width, layout.imageArea.height, {
+      fit: 'contain',
+      background: '#ffffff',
+    })
     .toBuffer();
 
-  const overlays = [{ input: resized, top: 0, left: 0 }];
+  const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
   if (options.includeText) {
     const svg = buildPreviewSvg(
       meta.date,
@@ -174,7 +242,7 @@ async function buildStampedImage(
       meta.description,
       size.width,
       size.height,
-      imageAreaHeight,
+      layout.textArea.y,
     );
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
