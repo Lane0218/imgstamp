@@ -167,6 +167,18 @@ function resolveLayoutMode(includeText: boolean, sourceInfo: SourceInfo | null):
   return ratio >= 1.8 ? 'right' : 'bottom';
 }
 
+function resolveImageRect(
+  sourceInfo: SourceInfo,
+  area: { x: number; y: number; width: number; height: number },
+): { x: number; y: number; width: number; height: number } {
+  const scale = Math.min(area.width / sourceInfo.width, area.height / sourceInfo.height);
+  const width = Math.round(sourceInfo.width * scale);
+  const height = Math.round(sourceInfo.height * scale);
+  const x = area.x + Math.round((area.width - width) / 2);
+  const y = area.y + Math.round((area.height - height) / 2);
+  return { x, y, width, height };
+}
+
 function buildLayout(
   canvas: { width: number; height: number },
   options: { includeText: boolean; mode: LayoutMode },
@@ -221,6 +233,7 @@ function buildPreviewSvg(
   meta: { date: string | null; location: string; description: string },
   layout: Layout,
   canvas: { width: number; height: number },
+  imageRect?: { x: number; y: number; width: number; height: number },
 ) {
   const fontSize = Math.round(canvas.height * 0.0225);
   const paddingY = Math.round(canvas.height * 0.02);
@@ -240,8 +253,13 @@ function buildPreviewSvg(
   const leftLine = [locationText, descText].filter(Boolean).join(' ｜ ');
   const rightLine = dateText;
 
-  const leftX = layout.textArea.x;
-  const rightX = isRight ? canvas.width - layout.margins.left : layout.textArea.x + layout.textArea.width;
+  const bottomBounds = imageRect
+    ? { left: imageRect.x, right: imageRect.x + imageRect.width }
+    : { left: layout.textArea.x, right: layout.textArea.x + layout.textArea.width };
+  const leftX = isRight ? layout.textArea.x : bottomBounds.left;
+  const rightX = isRight
+    ? canvas.width - layout.margins.left
+    : bottomBounds.right;
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}"${baselineAttr}>${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end"${baselineAttr}>${rightLine}</text>\n</svg>`;
 }
@@ -278,10 +296,11 @@ async function buildStampedImage(
 
   const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
   if (options.includeText) {
+    const imageRect = sourceInfo ? resolveImageRect(sourceInfo, layout.imageArea) : layout.imageArea;
     const svg = buildPreviewSvg(meta, layout, {
       width: canvasSize.width,
       height: canvasSize.height,
-    });
+    }, imageRect);
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
