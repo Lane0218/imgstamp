@@ -154,36 +154,50 @@ export function App() {
       },
     });
 
-    const handleOpenDirectory = async () => {
+    const recordRecent = async (entry: {
+      name: string;
+      kind: 'folder' | 'project';
+      path: string;
+      baseDir: string;
+    }) => {
       try {
-        const dir = await window.imgstamp.openDirectory();
-        if (dir) {
-          const scanned = await window.imgstamp.scanImages(dir);
-          const nextPhotos = scanned.map(toPhotoItem);
-          const firstId = nextPhotos[0]?.id ?? null;
-          setPhotos(nextPhotos);
-          setCurrentPhotoId(firstId);
-          setMultiSelectedIds(firstId ? [firstId] : []);
-          setSelectionAnchorIndex(firstId ? 0 : null);
-          setBaseDir(dir);
-          setProjectPath(null);
-          setProjectName('未命名项目');
-          await window.imgstamp.setWindowTitle('未命名项目');
-          setStatusMessage(`已导入目录: ${dir}`);
-        }
+        await window.imgstamp.addRecentProject(entry);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    const loadDirectory = async (dir: string, options?: { projectName?: string }) => {
+      try {
+        const scanned = await window.imgstamp.scanImages(dir);
+        const nextPhotos = scanned.map(toPhotoItem);
+        const firstId = nextPhotos[0]?.id ?? null;
+        const nextName = options?.projectName || '未命名项目';
+        const recentName = options?.projectName || getNameFromPath(dir) || '未命名项目';
+        setPhotos(nextPhotos);
+        setCurrentPhotoId(firstId);
+        setMultiSelectedIds(firstId ? [firstId] : []);
+        setSelectionAnchorIndex(firstId ? 0 : null);
+        setBaseDir(dir);
+        setProjectPath(null);
+        setProjectName(nextName);
+        await window.imgstamp.setWindowTitle(nextName);
+        setStatusMessage(`已导入目录: ${dir}`);
+        await recordRecent({
+          name: recentName,
+          kind: 'folder',
+          path: dir,
+          baseDir: dir,
+        });
       } catch (error) {
         setStatusMessage('打开文件夹失败');
         console.error(error);
       }
     };
 
-    const handleOpenProject = async () => {
+    const loadProjectByPath = async (projectPath: string) => {
       try {
-        const path = await window.imgstamp.openProjectFile();
-        if (!path) {
-          return;
-        }
-        const data = await window.imgstamp.loadProject(path);
+        const data = await window.imgstamp.loadProject(projectPath);
         const project = data as ProjectData;
         if (project?.baseDir) {
           const scanned = await window.imgstamp.scanImages(project.baseDir);
@@ -207,13 +221,19 @@ export function App() {
           setMultiSelectedIds(firstId ? [firstId] : []);
           setSelectionAnchorIndex(firstId ? 0 : null);
           setBaseDir(project.baseDir);
-          const fallbackName = getNameFromPath(path);
+          const fallbackName = getNameFromPath(projectPath);
           const nextName = project.name || fallbackName || '未命名项目';
           setProjectName(nextName);
           setExportSize(project.exportSize ?? '5L');
-          setProjectPath(path);
-          setStatusMessage(`已打开项目: ${path}`);
+          setProjectPath(projectPath);
+          setStatusMessage(`已打开项目: ${projectPath}`);
           await window.imgstamp.setWindowTitle(nextName);
+          await recordRecent({
+            name: nextName,
+            kind: 'project',
+            path: projectPath,
+            baseDir: project.baseDir,
+          });
         } else {
           setStatusMessage('项目缺少基础目录');
         }
@@ -221,6 +241,22 @@ export function App() {
         setStatusMessage('打开项目失败');
         console.error(error);
       }
+    };
+
+    const handleOpenDirectory = async () => {
+      const dir = await window.imgstamp.openDirectory();
+      if (!dir) {
+        return;
+      }
+      await loadDirectory(dir);
+    };
+
+    const handleOpenProject = async () => {
+      const path = await window.imgstamp.openProjectFile();
+      if (!path) {
+        return;
+      }
+      await loadProjectByPath(path);
     };
 
     const handleSaveProject = async () => {
@@ -251,6 +287,14 @@ export function App() {
         setProjectName(nameFromPath);
         setStatusMessage(`已保存项目: ${targetPath}`);
         await window.imgstamp.setWindowTitle(nameFromPath);
+        if (baseDir) {
+          await recordRecent({
+            name: nameFromPath,
+            kind: 'project',
+            path: targetPath,
+            baseDir,
+          });
+        }
       } catch (error) {
         setStatusMessage('保存项目失败');
         console.error(error);
@@ -346,6 +390,18 @@ export function App() {
     const unsubSaveProject = window.imgstamp.onMenuSaveProject(handleSaveProject);
     const unsubExport = window.imgstamp.onMenuExport(handleExport);
     const unsubSetSize = window.imgstamp.onMenuSetSize(handleSetSize);
+    const unsubLauncherCreate = window.imgstamp.onLauncherCreateProject(async (payload) => {
+      if (!payload?.baseDir) {
+        return;
+      }
+      await loadDirectory(payload.baseDir, { projectName: payload.name });
+    });
+    const unsubLauncherOpen = window.imgstamp.onLauncherOpenProject(async (projectPath) => {
+      if (!projectPath) {
+        return;
+      }
+      await loadProjectByPath(projectPath);
+    });
     const unsubExportProgress = window.imgstamp.onExportProgress((payload) => {
       setStatusMessage(`正在导出 ${payload.current}/${payload.total}`);
       setExportProgress({ current: payload.current, total: payload.total });
@@ -357,6 +413,8 @@ export function App() {
       unsubSaveProject();
       unsubExport();
       unsubSetSize();
+      unsubLauncherCreate();
+      unsubLauncherOpen();
       unsubExportProgress();
     };
   }, [projectPath, projectName, baseDir, photos, exportSize, isExporting]);

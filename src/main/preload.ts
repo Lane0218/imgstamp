@@ -1,6 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 const api = {
+  getRecentProjects: () => ipcRenderer.invoke('recent:list'),
+  addRecentProject: (entry: {
+    name: string;
+    kind: 'folder' | 'project';
+    path: string;
+    baseDir: string;
+  }) => ipcRenderer.invoke('recent:add', entry),
+  launcherCreateProject: (payload: { name: string; baseDir: string }) =>
+    ipcRenderer.invoke('launcher:create-project', payload),
+  launcherOpenProject: (projectPath: string) =>
+    ipcRenderer.invoke('launcher:open-project', projectPath),
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openExportDirectory: () => ipcRenderer.invoke('dialog:openExportDirectory'),
   openPath: (targetPath: string) => ipcRenderer.invoke('system:openPath', targetPath),
@@ -61,6 +72,17 @@ const api = {
     const listener = (_event: unknown, size: '5' | '5L' | '6' | '6L') => callback(size);
     ipcRenderer.on('menu:set-size', listener);
     return () => ipcRenderer.removeListener('menu:set-size', listener);
+  },
+  onLauncherCreateProject: (callback: (payload: { name: string; baseDir: string }) => void) => {
+    const listener = (_event: unknown, payload: { name: string; baseDir: string }) =>
+      callback(payload);
+    ipcRenderer.on('launcher:create-project', listener);
+    return () => ipcRenderer.removeListener('launcher:create-project', listener);
+  },
+  onLauncherOpenProject: (callback: (projectPath: string) => void) => {
+    const listener = (_event: unknown, projectPath: string) => callback(projectPath);
+    ipcRenderer.on('launcher:open-project', listener);
+    return () => ipcRenderer.removeListener('launcher:open-project', listener);
   },
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,

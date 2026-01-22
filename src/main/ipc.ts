@@ -23,6 +23,14 @@ type ExportPayload = {
   }>;
 };
 
+type RecentProject = {
+  name: string;
+  kind: 'folder' | 'project';
+  path: string;
+  baseDir: string;
+  lastOpenedAt: number;
+};
+
 type ScanResult = {
   id: string;
   filename: string;
@@ -37,6 +45,8 @@ const EXPORT_SIZE_PX = {
   '6': { width: 1800, height: 1200 },
   '6L': { width: 1800, height: 1350 },
 } as const;
+const RECENT_LIMIT = 10;
+const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -219,7 +229,57 @@ async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
   await fs.rename(tempPath, filePath);
 }
 
+function getNameFromPath(targetPath: string): string {
+  const parts = targetPath.split(/[/\\]+/);
+  return parts[parts.length - 1] || targetPath;
+}
+
+async function readRecentProjects(): Promise<RecentProject[]> {
+  try {
+    const raw = await fs.readFile(RECENT_FILE, 'utf-8');
+    const data = JSON.parse(raw) as RecentProject[];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+async function upsertRecentProject(
+  entry: Omit<RecentProject, 'lastOpenedAt'>,
+): Promise<RecentProject[]> {
+  const now = Date.now();
+  const list = await readRecentProjects();
+  const key = `${entry.kind}:${entry.path}`;
+  const cleaned = list.filter((item) => `${item.kind}:${item.path}` !== key);
+  const name = entry.name || getNameFromPath(entry.path);
+  const baseDir = entry.baseDir || entry.path;
+  const next = [{ ...entry, name, baseDir, lastOpenedAt: now }, ...cleaned].slice(0, RECENT_LIMIT);
+  await writeJsonAtomic(RECENT_FILE, next);
+  return next;
+}
+
 export function registerIpcHandlers(): void {
+  ipcMain.handle('recent:list', async () => readRecentProjects());
+
+  ipcMain.handle(
+    'recent:add',
+    async (
+      _event,
+      payload: { name: string; kind: 'folder' | 'project'; path: string; baseDir: string },
+    ) => {
+      if (!payload?.path || !payload?.kind) {
+        throw new Error('参数不能为空');
+      }
+      await upsertRecentProject({
+        name: payload.name,
+        kind: payload.kind,
+        path: payload.path,
+        baseDir: payload.baseDir ?? payload.path,
+      });
+      return true;
+    },
+  );
+
   ipcMain.handle('dialog:openDirectory', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openDirectory'],

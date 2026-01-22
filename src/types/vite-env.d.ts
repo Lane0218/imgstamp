@@ -4,6 +4,23 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 type ImgStampApi = {
+  getRecentProjects: () => Promise<
+    Array<{
+      name: string;
+      kind: 'folder' | 'project';
+      path: string;
+      baseDir: string;
+      lastOpenedAt: number;
+    }>
+  >;
+  addRecentProject: (entry: {
+    name: string;
+    kind: 'folder' | 'project';
+    path: string;
+    baseDir: string;
+  }) => Promise<boolean>;
+  launcherCreateProject: (payload: { name: string; baseDir: string }) => Promise<boolean>;
+  launcherOpenProject: (projectPath: string) => Promise<boolean>;
   openDirectory: () => Promise<string | null>;
   openExportDirectory: () => Promise<string | null>;
   openPath: (targetPath: string) => Promise<string>;
@@ -45,6 +62,8 @@ type ImgStampApi = {
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,
   ) => () => void;
+  onLauncherCreateProject: (callback: (payload: { name: string; baseDir: string }) => void) => () => void;
+  onLauncherOpenProject: (callback: (projectPath: string) => void) => () => void;
   setWindowTitle: (projectName: string) => Promise<void>;
 };
 
