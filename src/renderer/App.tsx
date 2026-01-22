@@ -129,6 +129,87 @@ export function App() {
     setStatusMessage(`已切换导出尺寸: ${label}`);
   };
 
+  const handleExport = async () => {
+    if (!window.imgstamp) {
+      return;
+    }
+    if (isExporting) {
+      return;
+    }
+    if (!baseDir) {
+      setStatusMessage('请先导入照片');
+      return;
+    }
+
+    const candidates = photos.filter((photo) => photo.selected);
+    if (candidates.length === 0) {
+      setStatusMessage('请先选择要导出的照片');
+      return;
+    }
+
+    const readyItems = candidates.filter(
+      (photo) => photo.meta.date && photo.meta.location && photo.meta.description,
+    );
+    if (readyItems.length !== candidates.length) {
+      setStatusMessage('所选照片信息未完善');
+      return;
+    }
+
+    const exportDir = await window.imgstamp.openExportDirectory();
+    if (!exportDir) {
+      return;
+    }
+
+    setExportDialog(null);
+    setExportProgress({ current: 0, total: readyItems.length });
+    setIsExporting(true);
+    setStatusMessage(`开始导出 0/${readyItems.length}`);
+    try {
+      const result = await window.imgstamp.startExport(
+        baseDir,
+        exportDir,
+        readyItems.map((photo) => ({
+          relativePath: photo.relativePath,
+          filename: photo.filename,
+          meta: {
+            date: photo.meta.date,
+            location: photo.meta.location,
+            description: photo.meta.description,
+          },
+        })),
+        exportSize,
+      );
+
+      const hasFailure = result.failed > 0;
+      const title = hasFailure ? '导出完成（部分失败）' : '导出完成';
+      setExportDialog({
+        title,
+        exported: result.exported,
+        failed: result.failed,
+        total: result.total,
+        outputDir: result.outputDir,
+      });
+      setStatusMessage(
+        hasFailure
+          ? `导出完成: ${result.exported} 张，失败 ${result.failed} 张`
+          : `导出完成: ${result.exported} 张`,
+      );
+    } catch (error) {
+      setStatusMessage('导出失败');
+      setExportDialog({
+        title: '导出失败',
+        exported: 0,
+        failed: 0,
+        total: 0,
+        note: '请检查输出目录权限或图片是否损坏',
+      });
+      console.error(error);
+    } finally {
+      setIsExporting(false);
+      setExportProgress(null);
+    }
+  };
+
   useEffect(() => {
     if (!window.imgstamp) {
       return;
@@ -321,84 +402,6 @@ export function App() {
       } catch (error) {
         setStatusMessage('保存项目失败');
         console.error(error);
-      }
-    };
-
-    const handleExport = async () => {
-      if (isExporting) {
-        return;
-      }
-      if (!baseDir) {
-        setStatusMessage('请先导入照片');
-        return;
-      }
-
-      const candidates = photos.filter((photo) => photo.selected);
-      if (candidates.length === 0) {
-        setStatusMessage('请先选择要导出的照片');
-        return;
-      }
-
-      const readyItems = candidates.filter(
-        (photo) => photo.meta.date && photo.meta.location && photo.meta.description,
-      );
-      if (readyItems.length !== candidates.length) {
-        setStatusMessage('所选照片信息未完善');
-        return;
-      }
-
-      const exportDir = await window.imgstamp.openExportDirectory();
-      if (!exportDir) {
-        return;
-      }
-
-      setExportDialog(null);
-      setExportProgress({ current: 0, total: readyItems.length });
-      setIsExporting(true);
-      setStatusMessage(`开始导出 0/${readyItems.length}`);
-      try {
-        const result = await window.imgstamp.startExport(
-          baseDir,
-          exportDir,
-          readyItems.map((photo) => ({
-            relativePath: photo.relativePath,
-            filename: photo.filename,
-            meta: {
-              date: photo.meta.date,
-              location: photo.meta.location,
-              description: photo.meta.description,
-            },
-          })),
-          exportSize,
-        );
-
-        const hasFailure = result.failed > 0;
-        const title = hasFailure ? '导出完成（部分失败）' : '导出完成';
-        setExportDialog({
-          title,
-          exported: result.exported,
-          failed: result.failed,
-          total: result.total,
-          outputDir: result.outputDir,
-        });
-        setStatusMessage(
-          hasFailure
-            ? `导出完成: ${result.exported} 张，失败 ${result.failed} 张`
-            : `导出完成: ${result.exported} 张`,
-        );
-      } catch (error) {
-        setStatusMessage('导出失败');
-        setExportDialog({
-          title: '导出失败',
-          exported: 0,
-          failed: 0,
-          total: 0,
-          note: '请检查输出目录权限或图片是否损坏',
-        });
-        console.error(error);
-      } finally {
-        setIsExporting(false);
-        setExportProgress(null);
       }
     };
 
