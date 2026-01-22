@@ -190,7 +190,11 @@ function buildPreviewSvg(
 ) {
   const fontSize = Math.round(canvas.height * 0.0225);
   const paddingY = Math.round(canvas.height * 0.04);
-  const textY = layout.textArea.y + paddingY + fontSize;
+  const isRight = layout.mode === 'right';
+  const textY = isRight
+    ? layout.textArea.y + layout.textArea.height / 2
+    : layout.textArea.y + paddingY + fontSize;
+  const baselineAttr = isRight ? ' dominant-baseline="middle"' : '';
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -203,9 +207,9 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   const leftX = layout.textArea.x;
-  const rightX = layout.textArea.x + layout.textArea.width;
+  const rightX = isRight ? canvas.width - layout.margins.left : layout.textArea.x + layout.textArea.width;
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}"${baselineAttr}>${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end"${baselineAttr}>${rightLine}</text>\n</svg>`;
 }
 
 async function buildStampedImage(
@@ -214,9 +218,24 @@ async function buildStampedImage(
   size: { width: number; height: number },
   options: { includeText: boolean; format: 'jpeg' | 'png'; quality?: number },
 ) {
+  let mode: LayoutMode = 'bottom';
+  if (options.includeText) {
+    try {
+      const metadata = await sharp(sourcePath).metadata();
+      if (metadata.width && metadata.height) {
+        const ratio = metadata.height / metadata.width;
+        if (ratio >= 1.8) {
+          mode = 'right';
+        }
+      }
+    } catch {
+      // ignore metadata errors
+    }
+  }
+
   const layout = buildLayout(
     { width: size.width, height: size.height },
-    { includeText: options.includeText, mode: 'bottom' },
+    { includeText: options.includeText, mode },
   );
 
   const base = sharp({
