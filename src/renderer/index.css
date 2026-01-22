@@ -812,8 +812,8 @@ select {
   text-align: center;
 }
 .launcher__logo {
-  width: 300px;
-  height: 300px;
+  width: 250px;
+  height: 250px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -896,6 +896,24 @@ select {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.launcher-form .field {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.launcher-form .field > span {
+  width: 72px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.launcher-form .field > input,
+.launcher-form .field .launcher-row {
+  flex: 1;
+  min-width: 0;
 }
 
 .launcher-row {
