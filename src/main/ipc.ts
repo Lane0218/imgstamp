@@ -65,6 +65,7 @@ type Layout = {
 };
 type SourceInfo = { width: number; height: number };
 type Typography = { fontSize: number; paddingX: number; paddingY: number };
+type Bounds = { x: number; y: number; width: number; height: number };
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -191,6 +192,102 @@ function getTypography(canvas: { width: number; height: number }): Typography {
   };
 }
 
+async function detectContentBounds(
+  buffer: Buffer,
+  width: number,
+  height: number,
+): Promise<Bounds | null> {
+  const maxSample = 320;
+  const scale = Math.min(1, maxSample / Math.max(width, height));
+  const sampleWidth = Math.max(1, Math.round(width * scale));
+  const sampleHeight = Math.max(1, Math.round(height * scale));
+
+  const { data, info } = await sharp(buffer)
+    .removeAlpha()
+    .resize(sampleWidth, sampleHeight, { fit: 'fill' })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const channels = info.channels;
+  const readPixel = (x: number, y: number) => {
+    const idx = (y * sampleWidth + x) * channels;
+    return [data[idx], data[idx + 1], data[idx + 2]];
+  };
+
+  const corners = [
+    readPixel(0, 0),
+    readPixel(sampleWidth - 1, 0),
+    readPixel(0, sampleHeight - 1),
+    readPixel(sampleWidth - 1, sampleHeight - 1),
+  ];
+  const avg = corners.reduce(
+    (acc, color) => [acc[0] + color[0], acc[1] + color[1], acc[2] + color[2]],
+    [0, 0, 0],
+  );
+  const bg = [avg[0] / corners.length, avg[1] / corners.length, avg[2] / corners.length];
+  const brightness = (bg[0] + bg[1] + bg[2]) / 3;
+  const variance =
+    corners.reduce(
+      (acc, color) =>
+        acc + Math.abs(color[0] - bg[0]) + Math.abs(color[1] - bg[1]) + Math.abs(color[2] - bg[2]),
+      0,
+    ) / corners.length;
+
+  if (brightness < 230 || variance > 12) {
+    return null;
+  }
+
+  const threshold = 60;
+  let minX = sampleWidth;
+  let minY = sampleHeight;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < sampleHeight; y += 1) {
+    for (let x = 0; x < sampleWidth; x += 1) {
+      const idx = (y * sampleWidth + x) * channels;
+      const diff =
+        Math.abs(data[idx] - bg[0]) +
+        Math.abs(data[idx + 1] - bg[1]) +
+        Math.abs(data[idx + 2] - bg[2]);
+      if (diff > threshold) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return null;
+  }
+
+  const scaleX = width / sampleWidth;
+  const scaleY = height / sampleHeight;
+  const x = Math.max(0, Math.floor(minX * scaleX));
+  const y = Math.max(0, Math.floor(minY * scaleY));
+  const w = Math.min(width, Math.ceil((maxX - minX + 1) * scaleX));
+  const h = Math.min(height, Math.ceil((maxY - minY + 1) * scaleY));
+
+  const marginLeft = x;
+  const marginRight = width - (x + w);
+  const marginTop = y;
+  const marginBottom = height - (y + h);
+  const minInset = 0.02;
+  const hasInset =
+    marginLeft > width * minInset ||
+    marginRight > width * minInset ||
+    marginTop > height * minInset ||
+    marginBottom > height * minInset;
+
+  if (!hasInset) {
+    return null;
+  }
+
+  return { x, y, width: w, height: h };
+}
+
 function buildLayout(
   canvas: { width: number; height: number },
   options: { includeText: boolean; mode: LayoutMode },
@@ -315,10 +412,30 @@ async function buildStampedImage(
   const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
   if (options.includeText) {
     const imageRect = sourceInfo ? resolveImageRect(sourceInfo, layout.imageArea) : layout.imageArea;
+    let textRect: Bounds = imageRect;
+    if (mode === 'bottom') {
+      try {
+        const contentBounds = await detectContentBounds(
+          resized,
+          layout.imageArea.width,
+          layout.imageArea.height,
+        );
+        if (contentBounds) {
+          textRect = {
+            x: layout.imageArea.x + contentBounds.x,
+            y: layout.imageArea.y + contentBounds.y,
+            width: contentBounds.width,
+            height: contentBounds.height,
+          };
+        }
+      } catch {
+        // ignore detection errors
+      }
+    }
     const svg = buildPreviewSvg(meta, layout, {
       width: canvasSize.width,
       height: canvasSize.height,
-    }, imageRect);
+    }, textRect);
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
