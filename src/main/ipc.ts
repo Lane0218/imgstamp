@@ -46,8 +46,8 @@ const EXPORT_SIZE_PX = {
   '6L': { width: 1800, height: 1350 },
 } as const;
 const LAYOUT_RATIOS = {
-  side: 0.055,
-  bottom: 0.14,
+  side: 0.05,
+  bottom: 0.12,
   rightTextMin: 0.18,
 } as const;
 const RECENT_LIMIT = 10;
@@ -189,7 +189,7 @@ function buildPreviewSvg(
   canvas: { width: number; height: number },
 ) {
   const fontSize = Math.round(canvas.height * 0.0225);
-  const paddingY = Math.round(canvas.height * 0.04);
+  const paddingY = Math.round(canvas.height * 0.02);
   const isRight = layout.mode === 'right';
   const textY = isRight
     ? layout.textArea.y + layout.textArea.height / 2
