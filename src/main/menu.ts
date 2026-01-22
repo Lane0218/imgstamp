@@ -51,7 +51,6 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
       label: '帮助',
       submenu: [
         {
-        {
           label: '关于 ImgStamp',
           click: () =>
             showMessage({
