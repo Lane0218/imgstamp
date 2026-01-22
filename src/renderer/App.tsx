@@ -907,9 +907,7 @@ export function App() {
         <section className="panel panel--center">
           <div className="panel__header">
             <div className="panel__title">实时预览</div>
-          </div>
-          <div className="preview-area">
-            <div className="preview-toolbar">
+            <div className="panel__actions">
               <button className="icon-control" aria-label="放大" onClick={handleZoomIn}>
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <circle cx="11" cy="11" r="7" />
@@ -948,6 +946,8 @@ export function App() {
                 )}
               </button>
             </div>
+          </div>
+          <div className="preview-area">
             <div className="preview-canvas">
               {previewUrl ? (
                 <div className="preview-image" style={{ transform: `scale(${zoom})` }}>
@@ -969,50 +969,50 @@ export function App() {
             <div className="meta__sub">已选中 {multiSelectedCount} 张图片</div>
           </div>
           <div className="form">
-            <div className="form-group">
-              <div className="form-group__title">拍摄信息</div>
-              <label className="field">
-                <span>拍摄日期</span>
+            <label className="field">
+              <span>拍摄日期</span>
+              <div className="field-row">
                 <input
                   type="date"
                   value={currentPhoto?.meta.date ?? ''}
                   onChange={(event) => updateCurrentMeta({ date: event.target.value || null })}
                   disabled={!currentPhoto}
                 />
-                <div className="field-actions">
-                  <button
-                    className="btn btn--ghost"
-                    onClick={handleResetExif}
-                    disabled={!currentPhoto}
-                  >
-                    复位到 EXIF
-                  </button>
-                </div>
-              </label>
-              <label className="field">
-                <span>拍摄地点</span>
-                <input
-                  type="text"
-                  placeholder="例如：上海市"
-                  value={currentPhoto?.meta.location ?? ''}
-                  onChange={(event) => updateCurrentMeta({ location: event.target.value })}
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="复位到 EXIF"
+                  title="复位到 EXIF"
+                  onClick={handleResetExif}
                   disabled={!currentPhoto}
-                />
-              </label>
-            </div>
-            <div className="form-group">
-              <div className="form-group__title">描述</div>
-              <label className="field">
-                <span>描述</span>
-                <input
-                  type="text"
-                  placeholder="记录当下的心情或事件（限单行）..."
-                  value={currentPhoto?.meta.description ?? ''}
-                  onChange={(event) => updateCurrentMeta({ description: event.target.value })}
-                  disabled={!currentPhoto}
-                />
-              </label>
-            </div>
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 12a9 9 0 1 0 3-6.7" />
+                    <polyline points="3 4 3 10 9 10" />
+                  </svg>
+                </button>
+              </div>
+            </label>
+            <label className="field">
+              <span>拍摄地点</span>
+              <input
+                type="text"
+                placeholder="例如：上海市"
+                value={currentPhoto?.meta.location ?? ''}
+                onChange={(event) => updateCurrentMeta({ location: event.target.value })}
+                disabled={!currentPhoto}
+              />
+            </label>
+            <label className="field">
+              <span>描述</span>
+              <input
+                type="text"
+                placeholder="记录当下的心情或事件（限单行）..."
+                value={currentPhoto?.meta.description ?? ''}
+                onChange={(event) => updateCurrentMeta({ description: event.target.value })}
+                disabled={!currentPhoto}
+              />
+            </label>
           </div>
           <div className="form-actions">
             <button className="btn btn--primary" onClick={handleCopyPrev} disabled={!currentPhoto}>
@@ -1044,7 +1044,6 @@ export function App() {
       <footer className="status-bar">
         <div>
           总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
-          {` | 尺寸：${EXPORT_SIZE_META[exportSize].label} | 比例：${EXPORT_SIZE_META[exportSize].ratio} | 大小(cm)：${EXPORT_SIZE_META[exportSize].cm}`}
         </div>
         <div className="status-bar__right">
           <div className="status-bar__text">{apiAvailable ? statusMessage : '预加载未就绪'}</div>
