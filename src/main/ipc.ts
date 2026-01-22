@@ -184,27 +184,28 @@ function buildLayout(
 }
 
 function buildPreviewSvg(
-  date: string | null,
-  location: string,
-  description: string,
-  width: number,
-  height: number,
-  textAreaTop: number,
+  meta: { date: string | null; location: string; description: string },
+  layout: Layout,
+  canvas: { width: number; height: number },
 ) {
-  const padding = Math.max(24, Math.round(width * 0.04));
-  const fontSize = Math.round(width * 0.028);
-  const textY = textAreaTop + padding + fontSize;
+  const fontSize = Math.round(canvas.height * 0.0225);
+  const paddingY = Math.round(canvas.height * 0.04);
+  const textY = layout.textArea.y + paddingY + fontSize;
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
-  const dateText = date ? safe(date) : '';
-  const locationText = location ? safe(location) : '';
-  const descText = description ? safe(description) : '';
-  const line = [dateText, locationText, descText].filter(Boolean).join(' · ');
+  const dateText = meta.date ? safe(meta.date) : '';
+  const locationText = meta.location ? safe(meta.location) : '';
+  const descText = meta.description ? safe(meta.description) : '';
+  const leftLine = [locationText, descText].filter(Boolean).join(' ｜ ');
+  const rightLine = dateText;
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; }\n  </style>\n  <text class="label" x="${padding}" y="${textY}">${line}</text>\n</svg>`;
+  const leftX = layout.textArea.x;
+  const rightX = layout.textArea.x + layout.textArea.width;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
 }
 
 async function buildStampedImage(
@@ -236,14 +237,7 @@ async function buildStampedImage(
 
   const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
   if (options.includeText) {
-    const svg = buildPreviewSvg(
-      meta.date,
-      meta.location,
-      meta.description,
-      size.width,
-      size.height,
-      layout.textArea.y,
-    );
+    const svg = buildPreviewSvg(meta, layout, { width: size.width, height: size.height });
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
