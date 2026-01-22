@@ -793,7 +793,7 @@ select {
 
 .launcher__main {
   padding: 32px;
-  padding-top: clamp(48px, 10vh, 96px);
+  padding-top: 0px;
   display: flex;
   flex-direction: column;
   align-items: center;
