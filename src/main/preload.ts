@@ -12,6 +12,7 @@ const api = {
     ipcRenderer.invoke('launcher:create-project', payload),
   launcherOpenProject: (projectPath: string) =>
     ipcRenderer.invoke('launcher:open-project', projectPath),
+  getLaunchPayload: () => ipcRenderer.invoke('launcher:get-payload'),
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openExportDirectory: () => ipcRenderer.invoke('dialog:openExportDirectory'),
   openPath: (targetPath: string) => ipcRenderer.invoke('system:openPath', targetPath),

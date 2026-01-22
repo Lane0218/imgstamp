@@ -120,6 +120,7 @@ export function App() {
     startLeft: number;
     startRight: number;
   } | null>(null);
+  const launchHandledRef = useRef(false);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
   const handleExportSizeChange = (size: '5' | '5L' | '6' | '6L') => {
@@ -245,6 +246,23 @@ export function App() {
       } catch (error) {
         setStatusMessage('打开项目失败');
         console.error(error);
+      }
+    };
+
+    const handleLaunchPayload = async (
+      payload:
+        | { type: 'create'; name: string; baseDir: string }
+        | { type: 'open-project'; projectPath: string }
+        | null,
+    ) => {
+      if (!payload || launchHandledRef.current) {
+        return;
+      }
+      launchHandledRef.current = true;
+      if (payload.type === 'create') {
+        await loadDirectory(payload.baseDir, { projectName: payload.name });
+      } else {
+        await loadProjectByPath(payload.projectPath);
       }
     };
 
@@ -393,18 +411,23 @@ export function App() {
       if (!payload?.baseDir) {
         return;
       }
-      await loadDirectory(payload.baseDir, { projectName: payload.name });
+      await handleLaunchPayload({ type: 'create', name: payload.name, baseDir: payload.baseDir });
     });
     const unsubLauncherOpen = window.imgstamp.onLauncherOpenProject(async (projectPath) => {
       if (!projectPath) {
         return;
       }
-      await loadProjectByPath(projectPath);
+      await handleLaunchPayload({ type: 'open-project', projectPath });
     });
     const unsubExportProgress = window.imgstamp.onExportProgress((payload) => {
       setStatusMessage(`正在导出 ${payload.current}/${payload.total}`);
       setExportProgress({ current: payload.current, total: payload.total });
     });
+
+    window.imgstamp
+      .getLaunchPayload()
+      .then(handleLaunchPayload)
+      .catch((error) => console.error(error));
 
     return () => {
       unsubOpenDirectory();

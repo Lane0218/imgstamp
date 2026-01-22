@@ -10,6 +10,7 @@ if (started) {
 
 let mainWindow: BrowserWindow | null = null;
 let launcherWindow: BrowserWindow | null = null;
+let pendingLaunchPayload: LaunchPayload | null = null;
 
 type LaunchPayload =
   | { type: 'create'; name: string; baseDir: string }
@@ -82,6 +83,7 @@ const sendLaunchPayload = (payload: LaunchPayload) => {
 };
 
 const openMainWindow = (payload: LaunchPayload) => {
+  pendingLaunchPayload = payload;
   if (mainWindow) {
     if (mainWindow.isMinimized()) {
       mainWindow.restore();
@@ -131,6 +133,12 @@ app.whenReady().then(() => {
     }
     openMainWindow({ type: 'open-project', projectPath });
     return true;
+  });
+
+  ipcMain.handle('launcher:get-payload', async () => {
+    const payload = pendingLaunchPayload;
+    pendingLaunchPayload = null;
+    return payload;
   });
 
   app.on('activate', () => {

@@ -21,6 +21,11 @@ type ImgStampApi = {
   }) => Promise<boolean>;
   launcherCreateProject: (payload: { name: string; baseDir: string }) => Promise<boolean>;
   launcherOpenProject: (projectPath: string) => Promise<boolean>;
+  getLaunchPayload: () => Promise<
+    | { type: 'create'; name: string; baseDir: string }
+    | { type: 'open-project'; projectPath: string }
+    | null
+  >;
   openDirectory: () => Promise<string | null>;
   openExportDirectory: () => Promise<string | null>;
   openPath: (targetPath: string) => Promise<string>;
