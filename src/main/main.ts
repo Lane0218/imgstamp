@@ -13,7 +13,7 @@ let launcherWindow: BrowserWindow | null = null;
 let pendingLaunchPayload: LaunchPayload | null = null;
 
 type LaunchPayload =
-  | { type: 'create'; name: string; baseDir: string }
+  | { type: 'create'; name: string; baseDir: string; projectPath: string }
   | { type: 'open-project'; projectPath: string };
 
 const loadRenderer = (window: BrowserWindow, view: 'main' | 'launcher') => {
@@ -76,6 +76,7 @@ const sendLaunchPayload = (payload: LaunchPayload) => {
     mainWindow.webContents.send('launcher:create-project', {
       name: payload.name,
       baseDir: payload.baseDir,
+      projectPath: payload.projectPath,
     });
   } else {
     mainWindow.webContents.send('launcher:open-project', payload.projectPath);
@@ -114,14 +115,15 @@ app.whenReady().then(() => {
 
   ipcMain.handle(
     'launcher:create-project',
-    async (_event, payload: { name: string; baseDir: string }) => {
-      if (!payload?.baseDir) {
-        throw new Error('baseDir 不能为空');
+    async (_event, payload: { name: string; baseDir: string; projectPath: string }) => {
+      if (!payload?.baseDir || !payload?.projectPath) {
+        throw new Error('参数不能为空');
       }
       openMainWindow({
         type: 'create',
         name: payload.name || '未命名项目',
         baseDir: payload.baseDir,
+        projectPath: payload.projectPath,
       });
       return true;
     },

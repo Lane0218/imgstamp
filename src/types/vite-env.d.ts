@@ -19,10 +19,10 @@ type ImgStampApi = {
     path: string;
     baseDir: string;
   }) => Promise<boolean>;
-  launcherCreateProject: (payload: { name: string; baseDir: string }) => Promise<boolean>;
+  launcherCreateProject: (payload: { name: string; baseDir: string; projectPath: string }) => Promise<boolean>;
   launcherOpenProject: (projectPath: string) => Promise<boolean>;
   getLaunchPayload: () => Promise<
-    | { type: 'create'; name: string; baseDir: string }
+    | { type: 'create'; name: string; baseDir: string; projectPath: string }
     | { type: 'open-project'; projectPath: string }
     | null
   >;
@@ -67,7 +67,7 @@ type ImgStampApi = {
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,
   ) => () => void;
-  onLauncherCreateProject: (callback: (payload: { name: string; baseDir: string }) => void) => () => void;
+  onLauncherCreateProject: (callback: (payload: { name: string; baseDir: string; projectPath: string }) => void) => () => void;
   onLauncherOpenProject: (callback: (projectPath: string) => void) => () => void;
   setWindowTitle: (projectName: string) => Promise<void>;
 };

@@ -19,9 +19,11 @@ export function Launcher() {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
   const [projectName, setProjectName] = useState('');
   const [folderPath, setFolderPath] = useState('');
+  const [projectFilePath, setProjectFilePath] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const canCreate = projectName.trim().length > 0 && folderPath;
+  const [dropMessage, setDropMessage] = useState<string | null>(null);
+  const canCreate = projectName.trim().length > 0 && folderPath && projectFilePath;
 
   useEffect(() => {
     let active = true;
@@ -51,6 +53,7 @@ export function Launcher() {
     if (!path) {
       return;
     }
+    setDropMessage(null);
     await window.imgstamp.launcherOpenProject(path);
   };
 
@@ -62,6 +65,20 @@ export function Launcher() {
     setFolderPath(dir);
     if (!projectName) {
       setProjectName(getNameFromPath(dir));
+    }
+    setDropMessage(null);
+    setError(null);
+  };
+
+  const handlePickProjectFile = async () => {
+    const filePath = await window.imgstamp.saveProjectFile();
+    if (!filePath) {
+      return;
+    }
+    setProjectFilePath(filePath);
+    if (!projectName) {
+      const name = getNameFromPath(filePath).replace(/\.json$/i, '') || '未命名项目';
+      setProjectName(name);
     }
     setError(null);
   };
@@ -76,8 +93,16 @@ export function Launcher() {
       setError('请选择图片文件夹');
       return;
     }
+    if (!projectFilePath) {
+      setError('请选择项目文件保存位置');
+      return;
+    }
     setError(null);
-    await window.imgstamp.launcherCreateProject({ name, baseDir: folderPath });
+    await window.imgstamp.launcherCreateProject({
+      name,
+      baseDir: folderPath,
+      projectPath: projectFilePath,
+    });
   };
 
   const handleOpenRecent = async (item: RecentProject) => {
@@ -98,8 +123,12 @@ export function Launcher() {
     if (!dropPath) {
       return;
     }
-    const name = getNameFromPath(dropPath);
-    await window.imgstamp.launcherCreateProject({ name, baseDir: dropPath });
+    if (!dropPath.toLowerCase().endsWith('.json')) {
+      setDropMessage('仅支持拖入项目 .json 文件');
+      return;
+    }
+    setDropMessage(null);
+    await window.imgstamp.launcherOpenProject(dropPath);
   };
 
   return (
@@ -158,7 +187,8 @@ export function Launcher() {
                   打开项目
                 </button>
               </div>
-              <div className="launcher-hint">拖入文件夹开始</div>
+              <div className="launcher-hint">拖入项目文件（.json）开始</div>
+              {dropMessage ? <div className="launcher-drop">{dropMessage}</div> : null}
             </>
           ) : (
             <>
@@ -192,6 +222,23 @@ export function Launcher() {
                       placeholder="请选择包含图片的文件夹"
                     />
                     <button className="btn" onClick={handleBrowseFolder}>
+                      浏览
+                    </button>
+                  </div>
+                </label>
+                <label className="field">
+                  <span>项目文件</span>
+                  <div className="launcher-row">
+                    <input
+                      type="text"
+                      value={projectFilePath}
+                      onChange={(event) => {
+                        setProjectFilePath(event.target.value);
+                        setError(null);
+                      }}
+                      placeholder="请选择项目文件保存位置"
+                    />
+                    <button className="btn" onClick={handlePickProjectFile}>
                       浏览
                     </button>
                   </div>

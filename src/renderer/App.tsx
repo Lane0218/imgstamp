@@ -254,28 +254,55 @@ export function App() {
       }
     };
 
-    const loadDirectory = async (dir: string, options?: { projectName?: string }) => {
+    const loadDirectory = async (
+      dir: string,
+      options?: { projectName?: string; projectPath?: string },
+    ) => {
       try {
         const scanned = await window.imgstamp.scanImages(dir);
         const nextPhotos = scanned.map(toPhotoItem);
         const firstId = nextPhotos[0]?.id ?? null;
-        const nextName = options?.projectName || '未命名项目';
-        const recentName = options?.projectName || getNameFromPath(dir) || '未命名项目';
+        const fallbackName = getNameFromPath(options?.projectPath || dir) || '未命名项目';
+        const nextName = options?.projectName || fallbackName || '未命名项目';
+        const recentName = options?.projectName || fallbackName || '未命名项目';
         setPhotos(nextPhotos);
         setCurrentPhotoId(firstId);
         setMultiSelectedIds(firstId ? [firstId] : []);
         setSelectionAnchorIndex(firstId ? 0 : null);
         setBaseDir(dir);
-        setProjectPath(null);
+        setProjectPath(options?.projectPath ?? null);
         setProjectName(nextName);
         await window.imgstamp.setWindowTitle(nextName);
-        setStatusMessage(`已导入目录: ${dir}`);
-        await recordRecent({
-          name: recentName,
-          kind: 'folder',
-          path: dir,
-          baseDir: dir,
-        });
+        setStatusMessage(options?.projectPath ? `已创建项目: ${nextName}` : `已导入目录: ${dir}`);
+        if (options?.projectPath) {
+          const projectToSave: ProjectData = {
+            version: '1.0',
+            name: nextName,
+            baseDir: dir,
+            exportSize,
+            photos: nextPhotos.map((photo) => ({
+              id: photo.id,
+              filename: photo.filename,
+              relativePath: photo.relativePath,
+              selected: photo.selected,
+              meta: photo.meta,
+            })),
+          };
+          await window.imgstamp.saveProject(options.projectPath, projectToSave);
+          await recordRecent({
+            name: recentName,
+            kind: 'project',
+            path: options.projectPath,
+            baseDir: dir,
+          });
+        } else {
+          await recordRecent({
+            name: recentName,
+            kind: 'folder',
+            path: dir,
+            baseDir: dir,
+          });
+        }
       } catch (error) {
         setStatusMessage('打开文件夹失败');
         console.error(error);
@@ -332,7 +359,7 @@ export function App() {
 
     const handleLaunchPayload = async (
       payload:
-        | { type: 'create'; name: string; baseDir: string }
+        | { type: 'create'; name: string; baseDir: string; projectPath: string }
         | { type: 'open-project'; projectPath: string }
         | null,
     ) => {
@@ -341,7 +368,10 @@ export function App() {
       }
       launchHandledRef.current = true;
       if (payload.type === 'create') {
-        await loadDirectory(payload.baseDir, { projectName: payload.name });
+        await loadDirectory(payload.baseDir, {
+          projectName: payload.name,
+          projectPath: payload.projectPath,
+        });
       } else {
         await loadProjectByPath(payload.projectPath);
       }
@@ -352,7 +382,13 @@ export function App() {
       if (!dir) {
         return;
       }
-      await loadDirectory(dir);
+      const projectPath = await window.imgstamp.saveProjectFile();
+      if (!projectPath) {
+        setStatusMessage('已取消创建项目');
+        return;
+      }
+      const nameFromPath = getNameFromPath(projectPath) || '未命名项目';
+      await loadDirectory(dir, { projectName: nameFromPath, projectPath });
     };
 
     const handleOpenProject = async () => {
@@ -414,7 +450,12 @@ export function App() {
       if (!payload?.baseDir) {
         return;
       }
-      await handleLaunchPayload({ type: 'create', name: payload.name, baseDir: payload.baseDir });
+      await handleLaunchPayload({
+        type: 'create',
+        name: payload.name,
+        baseDir: payload.baseDir,
+        projectPath: payload.projectPath,
+      });
     });
     const unsubLauncherOpen = window.imgstamp.onLauncherOpenProject(async (projectPath) => {
       if (!projectPath) {

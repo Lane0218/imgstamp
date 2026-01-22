@@ -879,6 +879,11 @@ select {
   color: var(--muted);
 }
 
+.launcher-drop {
+  font-size: 12px;
+  color: var(--error);
+}
+
 .launcher-back {
   border: none;
   background: transparent;

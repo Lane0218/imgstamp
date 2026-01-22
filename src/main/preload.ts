@@ -8,7 +8,7 @@ const api = {
     path: string;
     baseDir: string;
   }) => ipcRenderer.invoke('recent:add', entry),
-  launcherCreateProject: (payload: { name: string; baseDir: string }) =>
+  launcherCreateProject: (payload: { name: string; baseDir: string; projectPath: string }) =>
     ipcRenderer.invoke('launcher:create-project', payload),
   launcherOpenProject: (projectPath: string) =>
     ipcRenderer.invoke('launcher:open-project', projectPath),
