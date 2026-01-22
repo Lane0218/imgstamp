@@ -14,6 +14,11 @@ const getNameFromPath = (filePath: string) => {
   return parts[parts.length - 1] || filePath;
 };
 
+const buildProjectFileName = (name: string) => {
+  const safe = name.trim() || '未命名项目';
+  return `ImgStamp-${safe}.json`;
+};
+
 export function Launcher() {
   const [view, setView] = useState<'home' | 'create'>('home');
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
@@ -71,7 +76,8 @@ export function Launcher() {
   };
 
   const handlePickProjectFile = async () => {
-    const filePath = await window.imgstamp.saveProjectFile();
+    const defaultName = buildProjectFileName(projectName || getNameFromPath(folderPath) || '');
+    const filePath = await window.imgstamp.saveProjectFile(defaultName);
     if (!filePath) {
       return;
     }

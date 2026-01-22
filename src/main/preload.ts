@@ -28,7 +28,8 @@ const api = {
     options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
   ) => ipcRenderer.invoke('image:preview', baseDir, relativePath, meta, options),
   openProjectFile: () => ipcRenderer.invoke('dialog:openProjectFile'),
-  saveProjectFile: () => ipcRenderer.invoke('dialog:saveProjectFile'),
+  saveProjectFile: (defaultName?: string) =>
+    ipcRenderer.invoke('dialog:saveProjectFileWithName', defaultName),
   saveProject: (projectPath: string, data: unknown) =>
     ipcRenderer.invoke('project:save', { projectPath, data }),
   loadProject: (projectPath: string) =>

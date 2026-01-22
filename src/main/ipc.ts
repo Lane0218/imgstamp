@@ -229,6 +229,21 @@ async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
   await fs.rename(tempPath, filePath);
 }
 
+function sanitizeFileName(name: string): string {
+  const withoutInvalid = name.replace(/[<>:"/\\|?*\u0000-\u001F]/g, '');
+  const trimmed = withoutInvalid.trim();
+  return trimmed || 'ImgStamp-未命名项目.json';
+}
+
+function normalizeProjectFileName(input?: string): string {
+  if (!input) {
+    return 'project.json';
+  }
+  const base = path.basename(input);
+  const sanitized = sanitizeFileName(base);
+  return sanitized.toLowerCase().endsWith('.json') ? sanitized : `${sanitized}.json`;
+}
+
 function getNameFromPath(targetPath: string): string {
   const parts = targetPath.split(/[/\\]+/);
   return parts[parts.length - 1] || targetPath;
@@ -468,6 +483,19 @@ export function registerIpcHandlers(): void {
     const result = await dialog.showSaveDialog({
       filters: [{ name: '项目文件', extensions: ['json'] }],
       defaultPath: 'project.json',
+    });
+
+    if (result.canceled || !result.filePath) {
+      return null;
+    }
+
+    return result.filePath;
+  });
+
+  ipcMain.handle('dialog:saveProjectFileWithName', async (_event, defaultName?: string) => {
+    const result = await dialog.showSaveDialog({
+      filters: [{ name: '项目文件', extensions: ['json'] }],
+      defaultPath: normalizeProjectFileName(defaultName),
     });
 
     if (result.canceled || !result.filePath) {

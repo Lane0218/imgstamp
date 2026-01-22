@@ -377,12 +377,15 @@ export function App() {
       }
     };
 
+    const buildProjectFileName = (name: string) => `ImgStamp-${name || '未命名项目'}.json`;
+
     const handleOpenDirectory = async () => {
       const dir = await window.imgstamp.openDirectory();
       if (!dir) {
         return;
       }
-      const projectPath = await window.imgstamp.saveProjectFile();
+      const defaultName = buildProjectFileName(getNameFromPath(dir) || '未命名项目');
+      const projectPath = await window.imgstamp.saveProjectFile(defaultName);
       if (!projectPath) {
         setStatusMessage('已取消创建项目');
         return;

@@ -46,7 +46,7 @@ type ImgStampApi = {
     options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
   ) => Promise<string>;
   openProjectFile: () => Promise<string | null>;
-  saveProjectFile: () => Promise<string | null>;
+  saveProjectFile: (defaultName?: string) => Promise<string | null>;
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;
   loadProject: (projectPath: string) => Promise<unknown>;
   startExport: (
