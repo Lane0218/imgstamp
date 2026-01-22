@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { DragEvent } from 'react';
+import logoUrl from './assets/logo.png';
 
 type RecentProject = {
   name: string;
@@ -176,7 +177,9 @@ export function Launcher() {
         onDrop={handleDrop}
       >
         <div className="launcher__hero">
-          <div className="launcher__logo">IS</div>
+          <div className="launcher__logo">
+            <img src={logoUrl} alt="ImgStamp" />
+          </div>
           <div className="launcher__title">ImgStamp</div>
           <div className="launcher__subtitle">批量加白边与文字标注</div>
         </div>

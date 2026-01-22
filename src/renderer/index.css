@@ -826,16 +826,21 @@ select {
 .launcher__logo {
   width: 56px;
   height: 56px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #e2e8f0, #c7d2fe);
-  color: #1e293b;
-  font-weight: 700;
-  font-size: 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow);
   margin: 0 auto 10px;
+}
+
+.launcher__logo img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  display: block;
 }
 
 .launcher__title {

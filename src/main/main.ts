@@ -26,12 +26,21 @@ const loadRenderer = (window: BrowserWindow, view: 'main' | 'launcher') => {
   }
 };
 
+const getWindowIcon = () => {
+  try {
+    return path.join(app.getAppPath(), 'assets', 'icon.ico');
+  } catch {
+    return undefined;
+  }
+};
+
 const createMainWindow = () => {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 1100,
     minHeight: 720,
+    icon: getWindowIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -53,6 +62,7 @@ const createLauncherWindow = () => {
     minWidth: 820,
     minHeight: 520,
     title: 'ImgStamp',
+    icon: getWindowIcon(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
