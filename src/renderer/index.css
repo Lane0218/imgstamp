@@ -796,7 +796,8 @@ select {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 0px;
   margin-top: -250px;
   position: relative;
   transition: background-color 0.16s ease, box-shadow 0.16s ease;
@@ -807,9 +808,12 @@ select {
   box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.25);
 }
 
+.launcher__hero {
+  text-align: center;
+}
 .launcher__logo {
-  width: 250px;
-  height: 250px;
+  width: 300px;
+  height: 300px;
   border-radius: 0;
   background: transparent;
   border: none;
