@@ -252,10 +252,7 @@ function buildPreviewSvg(
   const fontSize = typography.fontSize;
   const paddingY = typography.paddingY;
   const isRight = layout.mode === 'right';
-  const textY = isRight
-    ? layout.textArea.y + layout.textArea.height / 2
-    : layout.textArea.y + paddingY + fontSize;
-  const baselineAttr = isRight ? ' dominant-baseline="middle"' : '';
+  const textY = layout.textArea.y + paddingY + fontSize;
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -267,6 +264,13 @@ function buildPreviewSvg(
   const leftLine = [locationText, descText].filter(Boolean).join(' ｜ ');
   const rightLine = dateText;
 
+  if (isRight) {
+    const combined = [leftLine, rightLine].filter(Boolean).join('  ');
+    const centerX = layout.textArea.x + layout.textArea.width / 2;
+    const centerY = layout.textArea.y + layout.textArea.height / 2;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${centerX} ${centerY})">${combined}</text>\n</svg>`;
+  }
+
   const bottomBounds = imageRect
     ? { left: imageRect.x, right: imageRect.x + imageRect.width }
     : { left: layout.textArea.x, right: layout.textArea.x + layout.textArea.width };
@@ -275,7 +279,7 @@ function buildPreviewSvg(
     ? canvas.width - layout.margins.left
     : bottomBounds.right;
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}"${baselineAttr}>${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end"${baselineAttr}>${rightLine}</text>\n</svg>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
 }
 
 async function buildStampedImage(
