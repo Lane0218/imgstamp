@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
@@ -31,12 +31,18 @@ const getWindowIcon = () => {
   const iconName =
     process.platform === 'darwin' ? 'icon.icns' : process.platform === 'win32' ? 'icon.ico' : 'icon.png';
   const candidates = [
+    path.resolve(__dirname, '../../assets', iconName),
+    path.resolve(__dirname, '../../../assets', iconName),
     path.join(process.resourcesPath, 'assets', iconName),
     path.join(app.getAppPath(), 'assets', iconName),
     path.join(process.cwd(), 'assets', iconName),
   ];
   const found = candidates.find((candidate) => fs.existsSync(candidate));
-  return found;
+  if (!found) {
+    return undefined;
+  }
+  const image = nativeImage.createFromPath(found);
+  return image.isEmpty() ? undefined : image;
 };
 
 const createMainWindow = () => {
@@ -125,6 +131,9 @@ const openMainWindow = (payload: LaunchPayload) => {
 };
 
 app.whenReady().then(() => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.imgstamp.app');
+  }
   registerIpcHandlers();
   launcherWindow = createLauncherWindow();
 

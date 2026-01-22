@@ -141,29 +141,23 @@ export function Launcher() {
   return (
     <div className="launcher">
       <aside className="launcher__sidebar">
-        <div>
-          <div className="launcher__brand">ImgStamp</div>
-          <div className="launcher__brand-sub">照片整理与标注</div>
-        </div>
-        <div>
-          <div className="launcher__section-title">最近项目</div>
-          <div className="recent-list">
-            {sortedRecent.length === 0 ? (
-              <div className="recent-empty">暂无最近项目</div>
-            ) : (
-              sortedRecent.map((item) => (
-                <button
-                  type="button"
-                  className="recent-item"
-                  key={`${item.kind}:${item.path}`}
-                  onClick={() => handleOpenRecent(item)}
-                >
-                  <div className="recent-item__name">{item.name}</div>
-                  <div className="recent-item__path">{item.path}</div>
-                </button>
-              ))
-            )}
-          </div>
+        <div className="launcher__section-title">最近项目</div>
+        <div className="recent-list">
+          {sortedRecent.length === 0 ? (
+            <div className="recent-empty">暂无最近项目</div>
+          ) : (
+            sortedRecent.map((item) => (
+              <button
+                type="button"
+                className="recent-item"
+                key={`${item.kind}:${item.path}`}
+                onClick={() => handleOpenRecent(item)}
+              >
+                <div className="recent-item__name">{item.name}</div>
+                <div className="recent-item__path">{item.path}</div>
+              </button>
+            ))
+          )}
         </div>
       </aside>
 
