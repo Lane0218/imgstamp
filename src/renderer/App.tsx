@@ -122,6 +122,11 @@ export function App() {
   } | null>(null);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
+  const handleExportSizeChange = (size: '5' | '5L' | '6' | '6L') => {
+    setExportSize(size);
+    const label = EXPORT_SIZE_META[size]?.label ?? size;
+    setStatusMessage(`已切换导出尺寸: ${label}`);
+  };
 
   useEffect(() => {
     if (!window.imgstamp) {
@@ -379,17 +384,11 @@ export function App() {
       }
     };
 
-    const handleSetSize = (size: '5' | '5L' | '6' | '6L') => {
-      setExportSize(size);
-      const label = EXPORT_SIZE_META[size]?.label ?? size;
-      setStatusMessage(`已切换导出尺寸: ${label}`);
-    };
-
     const unsubOpenDirectory = window.imgstamp.onMenuOpenDirectory(handleOpenDirectory);
     const unsubOpenProject = window.imgstamp.onMenuOpenProject(handleOpenProject);
     const unsubSaveProject = window.imgstamp.onMenuSaveProject(handleSaveProject);
     const unsubExport = window.imgstamp.onMenuExport(handleExport);
-    const unsubSetSize = window.imgstamp.onMenuSetSize(handleSetSize);
+    const unsubSetSize = window.imgstamp.onMenuSetSize(handleExportSizeChange);
     const unsubLauncherCreate = window.imgstamp.onLauncherCreateProject(async (payload) => {
       if (!payload?.baseDir) {
         return;
@@ -967,6 +966,22 @@ export function App() {
           <div className="panel__header">
             <div className="panel__title">实时预览</div>
             <div className="panel__actions">
+              <label className="size-select">
+                <span className="size-select__label">尺寸</span>
+                <select
+                  className="size-select__control"
+                  value={exportSize}
+                  onChange={(event) =>
+                    handleExportSizeChange(event.target.value as '5' | '5L' | '6' | '6L')
+                  }
+                >
+                  {Object.entries(EXPORT_SIZE_META).map(([value, meta]) => (
+                    <option key={value} value={value}>
+                      {meta.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 className="btn btn--primary btn--compact"
                 onClick={handleExport}
