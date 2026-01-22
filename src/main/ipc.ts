@@ -60,6 +60,7 @@ type Layout = {
   imageArea: { x: number; y: number; width: number; height: number };
   textArea: { x: number; y: number; width: number; height: number };
 };
+type SourceInfo = { width: number; height: number };
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -131,6 +132,39 @@ function formatExifDate(value: Date | string | number | null | undefined): strin
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+async function readSourceInfo(sourcePath: string): Promise<SourceInfo | null> {
+  try {
+    const metadata = await sharp(sourcePath).metadata();
+    if (metadata.width && metadata.height) {
+      return { width: metadata.width, height: metadata.height };
+    }
+  } catch {
+    // ignore metadata errors
+  }
+  return null;
+}
+
+function resolveCanvasSize(
+  baseSize: { width: number; height: number },
+  sourceInfo: SourceInfo | null,
+): { width: number; height: number } {
+  if (!sourceInfo) {
+    return baseSize;
+  }
+  if (sourceInfo.height > sourceInfo.width) {
+    return { width: baseSize.height, height: baseSize.width };
+  }
+  return baseSize;
+}
+
+function resolveLayoutMode(includeText: boolean, sourceInfo: SourceInfo | null): LayoutMode {
+  if (!includeText || !sourceInfo) {
+    return 'bottom';
+  }
+  const ratio = sourceInfo.height / sourceInfo.width;
+  return ratio >= 1.8 ? 'right' : 'bottom';
 }
 
 function buildLayout(
@@ -218,30 +252,18 @@ async function buildStampedImage(
   size: { width: number; height: number },
   options: { includeText: boolean; format: 'jpeg' | 'png'; quality?: number },
 ) {
-  let mode: LayoutMode = 'bottom';
-  if (options.includeText) {
-    try {
-      const metadata = await sharp(sourcePath).metadata();
-      if (metadata.width && metadata.height) {
-        const ratio = metadata.height / metadata.width;
-        if (ratio >= 1.8) {
-          mode = 'right';
-        }
-      }
-    } catch {
-      // ignore metadata errors
-    }
-  }
-
+  const sourceInfo = await readSourceInfo(sourcePath);
+  const canvasSize = resolveCanvasSize(size, sourceInfo);
+  const mode = resolveLayoutMode(options.includeText, sourceInfo);
   const layout = buildLayout(
-    { width: size.width, height: size.height },
+    { width: canvasSize.width, height: canvasSize.height },
     { includeText: options.includeText, mode },
   );
 
   const base = sharp({
     create: {
-      width: size.width,
-      height: size.height,
+      width: canvasSize.width,
+      height: canvasSize.height,
       channels: 3,
       background: '#ffffff',
     },
@@ -256,7 +278,10 @@ async function buildStampedImage(
 
   const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
   if (options.includeText) {
-    const svg = buildPreviewSvg(meta, layout, { width: size.width, height: size.height });
+    const svg = buildPreviewSvg(meta, layout, {
+      width: canvasSize.width,
+      height: canvasSize.height,
+    });
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
