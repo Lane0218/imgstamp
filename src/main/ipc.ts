@@ -46,9 +46,12 @@ const EXPORT_SIZE_PX = {
   '6L': { width: 1800, height: 1350 },
 } as const;
 const LAYOUT_RATIOS = {
-  side: 0.05,
-  bottom: 0.12,
-  rightTextMin: 0.18,
+  nonText: 0,
+} as const;
+const TYPOGRAPHY_RATIOS = {
+  font: 0.0225,
+  paddingX: 0.015,
+  paddingY: 0.015,
 } as const;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
@@ -61,6 +64,7 @@ type Layout = {
   textArea: { x: number; y: number; width: number; height: number };
 };
 type SourceInfo = { width: number; height: number };
+type Typography = { fontSize: number; paddingX: number; paddingY: number };
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -179,23 +183,32 @@ function resolveImageRect(
   return { x, y, width, height };
 }
 
+function getTypography(canvas: { width: number; height: number }): Typography {
+  return {
+    fontSize: Math.round(canvas.height * TYPOGRAPHY_RATIOS.font),
+    paddingX: Math.round(canvas.width * TYPOGRAPHY_RATIOS.paddingX),
+    paddingY: Math.round(canvas.height * TYPOGRAPHY_RATIOS.paddingY),
+  };
+}
+
 function buildLayout(
   canvas: { width: number; height: number },
   options: { includeText: boolean; mode: LayoutMode },
 ): Layout {
-  const sideX = Math.round(canvas.width * LAYOUT_RATIOS.side);
-  const sideY = Math.round(canvas.height * LAYOUT_RATIOS.side);
-  let top = sideY;
-  let bottom = sideY;
-  let left = sideX;
-  let right = sideX;
+  const typography = getTypography(canvas);
+  const nonTextX = Math.round(canvas.width * LAYOUT_RATIOS.nonText);
+  const nonTextY = Math.round(canvas.height * LAYOUT_RATIOS.nonText);
+  let top = nonTextY;
+  let bottom = nonTextY;
+  let left = nonTextX;
+  let right = nonTextX;
 
   if (options.includeText && options.mode === 'bottom') {
-    bottom = Math.round(canvas.height * LAYOUT_RATIOS.bottom);
+    bottom = typography.fontSize + typography.paddingY * 2;
   }
 
   if (options.includeText && options.mode === 'right') {
-    right = Math.max(Math.round(canvas.width * LAYOUT_RATIOS.rightTextMin), right);
+    right = typography.fontSize + typography.paddingX * 2;
   }
 
   const imageArea = {
@@ -235,8 +248,9 @@ function buildPreviewSvg(
   canvas: { width: number; height: number },
   imageRect?: { x: number; y: number; width: number; height: number },
 ) {
-  const fontSize = Math.round(canvas.height * 0.0225);
-  const paddingY = Math.round(canvas.height * 0.02);
+  const typography = getTypography(canvas);
+  const fontSize = typography.fontSize;
+  const paddingY = typography.paddingY;
   const isRight = layout.mode === 'right';
   const textY = isRight
     ? layout.textArea.y + layout.textArea.height / 2
