@@ -361,10 +361,30 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   if (isRight) {
-    const combined = [leftLine, rightLine].filter(Boolean).join('  ');
-    const centerX = layout.textArea.x + layout.textArea.width / 2;
-    const centerY = layout.textArea.y + layout.textArea.height / 2;
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${centerX}" y="${centerY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${centerX} ${centerY})">${combined}</text>\n</svg>`;
+    const baseRect = imageRect ?? {
+      x: layout.imageArea.x,
+      y: layout.imageArea.y,
+      width: layout.imageArea.width,
+      height: layout.imageArea.height,
+    };
+    const anchorX = baseRect.x + baseRect.width + fontSize / 2;
+    let topY = baseRect.y + fontSize;
+    let bottomY = baseRect.y + baseRect.height - fontSize;
+    const minGap = fontSize;
+    if (bottomY - topY < minGap) {
+      const mid = (topY + bottomY) / 2;
+      topY = mid - minGap / 2;
+      bottomY = mid + minGap / 2;
+    }
+    const dateLine = rightLine;
+    const metaLine = leftLine;
+    const dateSvg = dateLine
+      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
+      : '';
+    const metaSvg = metaLine
+      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
+      : '';
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
 
   const bottomBounds = imageRect
