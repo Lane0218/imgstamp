@@ -53,6 +53,7 @@ const TYPOGRAPHY_RATIOS = {
   paddingX: 0,
   paddingY: 0,
 } as const;
+const TEXT_ASCENT_RATIO = 0.8;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -175,12 +176,17 @@ function resolveLayoutMode(includeText: boolean, sourceInfo: SourceInfo | null):
 function resolveImageRect(
   sourceInfo: SourceInfo,
   area: { x: number; y: number; width: number; height: number },
+  align: { x: 'left' | 'center' | 'right'; y: 'top' | 'center' | 'bottom' },
 ): { x: number; y: number; width: number; height: number } {
   const scale = Math.min(area.width / sourceInfo.width, area.height / sourceInfo.height);
   const width = Math.round(sourceInfo.width * scale);
   const height = Math.round(sourceInfo.height * scale);
-  const x = area.x + Math.round((area.width - width) / 2);
-  const y = area.y + Math.round((area.height - height) / 2);
+  const offsetX =
+    align.x === 'left' ? 0 : align.x === 'right' ? area.width - width : (area.width - width) / 2;
+  const offsetY =
+    align.y === 'top' ? 0 : align.y === 'bottom' ? area.height - height : (area.height - height) / 2;
+  const x = area.x + Math.round(offsetX);
+  const y = area.y + Math.round(offsetY);
   return { x, y, width, height };
 }
 
@@ -348,7 +354,7 @@ function buildPreviewSvg(
   const typography = getTypography(canvas);
   const fontSize = typography.fontSize;
   const isRight = layout.mode === 'right';
-  const textY = layout.textArea.y + fontSize;
+  const textY = layout.textArea.y + Math.round(fontSize * TEXT_ASCENT_RATIO);
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -421,27 +427,43 @@ async function buildStampedImage(
     },
   });
 
-  const resized = await sharp(sourcePath)
-    .resize(layout.imageArea.width, layout.imageArea.height, {
-      fit: 'contain',
-      background: '#ffffff',
-    })
-    .toBuffer();
+  let imageRect = layout.imageArea;
+  let resized: Buffer;
+  if (sourceInfo) {
+    const align: { x: 'left' | 'center' | 'right'; y: 'top' | 'center' | 'bottom' } =
+      mode === 'bottom'
+        ? { x: 'center', y: 'bottom' }
+        : mode === 'right'
+          ? { x: 'right', y: 'center' }
+          : { x: 'center', y: 'center' };
+    imageRect = resolveImageRect(sourceInfo, layout.imageArea, align);
+    resized = await sharp(sourcePath)
+      .resize(imageRect.width, imageRect.height, {
+        fit: 'fill',
+      })
+      .toBuffer();
+  } else {
+    resized = await sharp(sourcePath)
+      .resize(layout.imageArea.width, layout.imageArea.height, {
+        fit: 'contain',
+        background: '#ffffff',
+      })
+      .toBuffer();
+  }
 
-  const overlays = [{ input: resized, top: layout.imageArea.y, left: layout.imageArea.x }];
+  const overlays = [{ input: resized, top: imageRect.y, left: imageRect.x }];
   if (options.includeText) {
-    const imageRect = sourceInfo ? resolveImageRect(sourceInfo, layout.imageArea) : layout.imageArea;
     let textRect: Bounds = imageRect;
     try {
       const contentBounds = await detectContentBounds(
         resized,
-        layout.imageArea.width,
-        layout.imageArea.height,
+        imageRect.width,
+        imageRect.height,
       );
       if (contentBounds) {
         textRect = {
-          x: layout.imageArea.x + contentBounds.x,
-          y: layout.imageArea.y + contentBounds.y,
+          x: imageRect.x + contentBounds.x,
+          y: imageRect.y + contentBounds.y,
           width: contentBounds.width,
           height: contentBounds.height,
         };
