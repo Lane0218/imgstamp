@@ -50,8 +50,8 @@ const LAYOUT_RATIOS = {
 } as const;
 const TYPOGRAPHY_RATIOS = {
   font: 0.0225,
-  paddingX: 0.015,
-  paddingY: 0.015,
+  paddingX: 0,
+  paddingY: 0,
 } as const;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
@@ -301,11 +301,11 @@ function buildLayout(
   let right = nonTextX;
 
   if (options.includeText && options.mode === 'bottom') {
-    bottom = typography.fontSize + typography.paddingY * 2;
+    bottom = typography.fontSize * 2;
   }
 
   if (options.includeText && options.mode === 'right') {
-    right = typography.fontSize + typography.paddingX * 2;
+    right = typography.fontSize * 2;
   }
 
   const imageArea = {
@@ -347,9 +347,8 @@ function buildPreviewSvg(
 ) {
   const typography = getTypography(canvas);
   const fontSize = typography.fontSize;
-  const paddingY = typography.paddingY;
   const isRight = layout.mode === 'right';
-  const textY = layout.textArea.y + paddingY + fontSize;
+  const textY = layout.textArea.y + fontSize;
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
