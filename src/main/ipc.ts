@@ -54,8 +54,9 @@ const TYPOGRAPHY_RATIOS = {
   paddingY: 0,
 } as const;
 const TEXT_ASCENT_RATIO = 0.8;
-const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.8;
-const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.9;
+const TEXT_IMAGE_GAP_MIN_RATIO = 0.2;
+const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.9;
+const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.6;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -177,18 +178,40 @@ function resolveLayoutMode(includeText: boolean, sourceInfo: SourceInfo | null):
 
 function resolveImageRect(
   sourceInfo: SourceInfo,
-  area: { x: number; y: number; width: number; height: number },
-  align: { x: 'left' | 'center' | 'right'; y: 'top' | 'center' | 'bottom' },
-): { x: number; y: number; width: number; height: number } {
-  const scale = Math.min(area.width / sourceInfo.width, area.height / sourceInfo.height);
+  layout: Layout,
+  fontSize: number,
+): Bounds {
+  const scale = Math.min(
+    layout.imageArea.width / sourceInfo.width,
+    layout.imageArea.height / sourceInfo.height,
+  );
   const width = Math.round(sourceInfo.width * scale);
   const height = Math.round(sourceInfo.height * scale);
-  const offsetX =
-    align.x === 'left' ? 0 : align.x === 'right' ? area.width - width : (area.width - width) / 2;
-  const offsetY =
-    align.y === 'top' ? 0 : align.y === 'bottom' ? area.height - height : (area.height - height) / 2;
-  const x = area.x + Math.round(offsetX);
-  const y = area.y + Math.round(offsetY);
+  let x = layout.imageArea.x;
+  let y = layout.imageArea.y;
+
+  if (layout.mode === 'bottom') {
+    const spaceY = Math.max(0, layout.imageArea.height - height);
+    const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
+    let bottomGap = Math.max(0, Math.round((spaceY - layout.textArea.height) / 2));
+    bottomGap = Math.min(Math.max(bottomGap, minGap), spaceY);
+    const topGap = spaceY - bottomGap;
+    y = layout.imageArea.y + topGap;
+    const spaceX = Math.max(0, layout.imageArea.width - width);
+    x = layout.imageArea.x + Math.round(spaceX / 2);
+  }
+
+  if (layout.mode === 'right') {
+    const spaceX = Math.max(0, layout.imageArea.width - width);
+    const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
+    let rightGap = Math.max(0, Math.round((spaceX - layout.textArea.width) / 2));
+    rightGap = Math.min(Math.max(rightGap, minGap), spaceX);
+    const leftGap = spaceX - rightGap;
+    x = layout.imageArea.x + leftGap;
+    const spaceY = Math.max(0, layout.imageArea.height - height);
+    y = layout.imageArea.y + Math.round(spaceY / 2);
+  }
+
   return { x, y, width, height };
 }
 
@@ -375,13 +398,16 @@ function buildPreviewSvg(
       width: layout.imageArea.width,
       height: layout.imageArea.height,
     };
-    const anchorX = baseRect.x + baseRect.width + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
+    const anchorX =
+      layout.textArea.x + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
     const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
-    let topY = baseRect.y + edgePadding;
-    let bottomY = baseRect.y + baseRect.height - edgePadding;
+    const minTop = layout.textArea.y + edgePadding;
+    const maxBottom = layout.textArea.y + layout.textArea.height - edgePadding;
+    let topY = Math.max(baseRect.y + edgePadding, minTop);
+    let bottomY = Math.min(baseRect.y + baseRect.height - edgePadding, maxBottom);
     const minGap = fontSize;
     if (bottomY - topY < minGap) {
-      const mid = (topY + bottomY) / 2;
+      const mid = (minTop + maxBottom) / 2;
       topY = mid - minGap / 2;
       bottomY = mid + minGap / 2;
     }
@@ -433,13 +459,8 @@ async function buildStampedImage(
   let imageRect = layout.imageArea;
   let resized: Buffer;
   if (sourceInfo) {
-    const align: { x: 'left' | 'center' | 'right'; y: 'top' | 'center' | 'bottom' } =
-      mode === 'bottom'
-        ? { x: 'center', y: 'bottom' }
-        : mode === 'right'
-          ? { x: 'right', y: 'center' }
-          : { x: 'center', y: 'center' };
-    imageRect = resolveImageRect(sourceInfo, layout.imageArea, align);
+    const typography = getTypography(canvasSize);
+    imageRect = resolveImageRect(sourceInfo, layout, typography.fontSize);
     resized = await sharp(sourcePath)
       .resize(imageRect.width, imageRect.height, {
         fit: 'fill',
