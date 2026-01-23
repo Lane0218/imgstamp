@@ -46,17 +46,16 @@ const EXPORT_SIZE_PX = {
   '6L': { width: 1800, height: 1350 },
 } as const;
 const LAYOUT_RATIOS = {
-  nonText: 0.02,
+  nonText: 0,
 } as const;
 const TYPOGRAPHY_RATIOS = {
   font: 0.0225,
   paddingX: 0,
   paddingY: 0,
 } as const;
-const TEXT_ASCENT_RATIO = 0.85;
-const TEXT_GAP_RATIO = 0.25;
-const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.9;
-const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.6;
+const TEXT_ASCENT_RATIO = 0.8;
+const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.8;
+const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.9;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -357,7 +356,7 @@ function buildPreviewSvg(
   const typography = getTypography(canvas);
   const fontSize = typography.fontSize;
   const isRight = layout.mode === 'right';
-  const textY = layout.textArea.y + Math.round(fontSize * (TEXT_ASCENT_RATIO + TEXT_GAP_RATIO));
+  const textY = layout.textArea.y + Math.round(fontSize * TEXT_ASCENT_RATIO);
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -376,7 +375,7 @@ function buildPreviewSvg(
       width: layout.imageArea.width,
       height: layout.imageArea.height,
     };
-    const anchorX = layout.textArea.x + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
+    const anchorX = baseRect.x + baseRect.width + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
     const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
     let topY = baseRect.y + edgePadding;
     let bottomY = baseRect.y + baseRect.height - edgePadding;
