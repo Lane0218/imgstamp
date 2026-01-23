@@ -55,8 +55,8 @@ const TYPOGRAPHY_RATIOS = {
 } as const;
 const TEXT_ASCENT_RATIO = 0.85;
 const TEXT_GAP_RATIO = 0.25;
-const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.8;
-const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.9;
+const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.9;
+const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.6;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -376,7 +376,7 @@ function buildPreviewSvg(
       width: layout.imageArea.width,
       height: layout.imageArea.height,
     };
-    const anchorX = baseRect.x + baseRect.width + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
+    const anchorX = layout.textArea.x + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
     const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
     let topY = baseRect.y + edgePadding;
     let bottomY = baseRect.y + baseRect.height - edgePadding;
