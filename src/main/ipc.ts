@@ -432,24 +432,22 @@ async function buildStampedImage(
   if (options.includeText) {
     const imageRect = sourceInfo ? resolveImageRect(sourceInfo, layout.imageArea) : layout.imageArea;
     let textRect: Bounds = imageRect;
-    if (mode === 'bottom') {
-      try {
-        const contentBounds = await detectContentBounds(
-          resized,
-          layout.imageArea.width,
-          layout.imageArea.height,
-        );
-        if (contentBounds) {
-          textRect = {
-            x: layout.imageArea.x + contentBounds.x,
-            y: layout.imageArea.y + contentBounds.y,
-            width: contentBounds.width,
-            height: contentBounds.height,
-          };
-        }
-      } catch {
-        // ignore detection errors
+    try {
+      const contentBounds = await detectContentBounds(
+        resized,
+        layout.imageArea.width,
+        layout.imageArea.height,
+      );
+      if (contentBounds) {
+        textRect = {
+          x: layout.imageArea.x + contentBounds.x,
+          y: layout.imageArea.y + contentBounds.y,
+          width: contentBounds.width,
+          height: contentBounds.height,
+        };
       }
+    } catch {
+      // ignore detection errors
     }
     const svg = buildPreviewSvg(meta, layout, {
       width: canvasSize.width,
