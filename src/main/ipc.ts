@@ -54,6 +54,8 @@ const TYPOGRAPHY_RATIOS = {
   paddingY: 0,
 } as const;
 const TEXT_ASCENT_RATIO = 0.8;
+const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.8;
+const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.9;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -373,9 +375,10 @@ function buildPreviewSvg(
       width: layout.imageArea.width,
       height: layout.imageArea.height,
     };
-    const anchorX = baseRect.x + baseRect.width + fontSize / 2;
-    let topY = baseRect.y + fontSize;
-    let bottomY = baseRect.y + baseRect.height - fontSize;
+    const anchorX = baseRect.x + baseRect.width + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
+    const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
+    let topY = baseRect.y + edgePadding;
+    let bottomY = baseRect.y + baseRect.height - edgePadding;
     const minGap = fontSize;
     if (bottomY - topY < minGap) {
       const mid = (topY + bottomY) / 2;
@@ -385,10 +388,10 @@ function buildPreviewSvg(
     const dateLine = rightLine;
     const metaLine = leftLine;
     const dateSvg = dateLine
-      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
       : '';
     const metaSvg = metaLine
-      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
       : '';
     return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
