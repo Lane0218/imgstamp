@@ -463,7 +463,7 @@ function buildPreviewSvg(
   const dateText = meta.date ?? '';
   const locationText = meta.location ?? '';
   const descText = meta.description ?? '';
-  const leftLine = [locationText, descText].filter(Boolean).join(' ｜ ');
+  const leftLine = [locationText, descText].filter(Boolean).join(' · ');
   const rightLine = dateText;
 
   if (isRight) {
@@ -479,7 +479,7 @@ function buildPreviewSvg(
     const metaLine = leftLine;
     const dateLength = estimateTextLength(meta.date ?? '', fontSize);
     const metaLength = estimateTextLength(
-      [meta.location ?? '', meta.description ?? ''].filter(Boolean).join(' ｜ '),
+      [meta.location ?? '', meta.description ?? ''].filter(Boolean).join(' · '),
       fontSize,
     );
     const clamp = (value: number, min: number, max: number) =>
