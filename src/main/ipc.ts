@@ -56,6 +56,7 @@ const TYPOGRAPHY_RATIOS = {
 const TEXT_ASCENT_RATIO = 0.8;
 const TEXT_IMAGE_GAP_MIN_RATIO = 0.3;
 const TEXT_BORDER_RATIO = 2.5;
+const TEXT_EDGE_SAFE_RATIO = 1.5;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -180,7 +181,11 @@ function resolveImageRect(
   layout: Layout,
   fontSize: number,
 ): Bounds {
-  const textBorder = Math.ceil(fontSize * TEXT_BORDER_RATIO);
+  const requiredBorderRatio = Math.max(
+    TEXT_BORDER_RATIO,
+    TEXT_IMAGE_GAP_MIN_RATIO + 1 + TEXT_EDGE_SAFE_RATIO,
+  );
+  const textBorder = Math.ceil(fontSize * requiredBorderRatio);
   const canvasWidth = layout.imageArea.width;
   const canvasHeight = layout.imageArea.height;
   const maxWidth =
@@ -352,7 +357,11 @@ function buildLayout(
   options: { includeText: boolean; mode: LayoutMode },
 ): Layout {
   const typography = getTypography(canvas);
-  const textBorder = Math.ceil(typography.fontSize * TEXT_BORDER_RATIO);
+  const requiredBorderRatio = Math.max(
+    TEXT_BORDER_RATIO,
+    TEXT_IMAGE_GAP_MIN_RATIO + 1 + TEXT_EDGE_SAFE_RATIO,
+  );
+  const textBorder = Math.ceil(typography.fontSize * requiredBorderRatio);
   const imageArea = {
     x: 0,
     y: 0,
@@ -396,6 +405,7 @@ function buildPreviewSvg(
   const ascent = Math.round(fontSize * TEXT_ASCENT_RATIO);
   const descent = Math.max(1, fontSize - ascent);
   const minGap = Math.ceil(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
+  const edgeSafe = Math.ceil(fontSize * TEXT_EDGE_SAFE_RATIO);
   const imageBase = imageRect ?? {
     x: layout.imageArea.x,
     y: layout.imageArea.y,
@@ -415,12 +425,12 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   if (isRight) {
-    const maxAnchorX = canvas.width - minGap - descent;
+    const maxAnchorX = canvas.width - edgeSafe - descent;
     const anchorX = Math.min(
       imageBase.x + imageBase.width + minGap + ascent,
       maxAnchorX,
     );
-    const edgePadding = minGap;
+    const edgePadding = edgeSafe;
     const minTop = edgePadding;
     const maxBottom = canvas.height - edgePadding;
     const dateLine = rightLine;
@@ -458,10 +468,16 @@ function buildPreviewSvg(
   }
 
   const bottomBounds = { left: contentBase.x, right: contentBase.x + contentBase.width };
-  const leftX = bottomBounds.left;
-  const rightX = bottomBounds.right;
+  let leftX = Math.max(bottomBounds.left, edgeSafe);
+  let rightX = Math.min(bottomBounds.right, canvas.width - edgeSafe);
+  if (rightX < leftX) {
+    leftX = edgeSafe;
+    rightX = canvas.width - edgeSafe;
+  }
   const desiredTop = imageBase.y + imageBase.height + minGap;
-  const textY = Math.min(desiredTop + ascent, canvas.height - descent);
+  const minBaseline = desiredTop + ascent;
+  const maxBaseline = canvas.height - edgeSafe - descent;
+  const textY = Math.min(minBaseline, maxBaseline);
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
 }
