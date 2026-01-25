@@ -54,7 +54,6 @@ const TYPOGRAPHY_RATIOS = {
   paddingY: 0,
 } as const;
 const TEXT_ASCENT_RATIO = 0.8;
-const TEXT_IMAGE_GAP_MIN_RATIO = 0.2;
 const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.9;
 const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.6;
 const RECENT_LIMIT = 10;
@@ -192,9 +191,7 @@ function resolveImageRect(
 
   if (layout.mode === 'bottom') {
     const spaceY = Math.max(0, layout.imageArea.height - height);
-    const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
-    const bottomGap = Math.min(spaceY, minGap);
-    const topGap = Math.max(0, spaceY - bottomGap);
+    const topGap = Math.round(spaceY / 2);
     y = layout.imageArea.y + topGap;
     const spaceX = Math.max(0, layout.imageArea.width - width);
     x = layout.imageArea.x + Math.round(spaceX / 2);
@@ -202,9 +199,7 @@ function resolveImageRect(
 
   if (layout.mode === 'right') {
     const spaceX = Math.max(0, layout.imageArea.width - width);
-    const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
-    const rightGap = Math.min(spaceX, minGap);
-    const leftGap = Math.max(0, spaceX - rightGap);
+    const leftGap = Math.round(spaceX / 2);
     x = layout.imageArea.x + leftGap;
     const spaceY = Math.max(0, layout.imageArea.height - height);
     y = layout.imageArea.y + Math.round(spaceY / 2);
