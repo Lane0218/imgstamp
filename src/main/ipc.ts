@@ -394,7 +394,8 @@ function buildPreviewSvg(
   meta: { date: string | null; location: string; description: string },
   layout: Layout,
   canvas: { width: number; height: number },
-  imageRect?: { x: number; y: number; width: number; height: number },
+  imageRect?: Bounds,
+  contentRect?: Bounds,
 ) {
   const typography = getTypography(canvas);
   const fontSize = typography.fontSize;
@@ -402,12 +403,13 @@ function buildPreviewSvg(
   const ascent = Math.round(fontSize * TEXT_ASCENT_RATIO);
   const descent = Math.max(1, fontSize - ascent);
   const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
-  const baseRect = imageRect ?? {
+  const imageBase = imageRect ?? {
     x: layout.imageArea.x,
     y: layout.imageArea.y,
     width: layout.imageArea.width,
     height: layout.imageArea.height,
   };
+  const contentBase = contentRect ?? imageBase;
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -420,7 +422,7 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   if (isRight) {
-    const anchorX = Math.min(baseRect.x + baseRect.width + minGap, canvas.width - minGap);
+    const anchorX = Math.min(imageBase.x + imageBase.width + minGap, canvas.width - minGap);
     const edgePadding = minGap;
     const minTop = edgePadding;
     const maxBottom = canvas.height - edgePadding;
@@ -435,8 +437,12 @@ function buildPreviewSvg(
       Math.min(Math.max(value, min), Math.max(min, max));
     const topMax = Math.max(minTop, maxBottom - dateLength);
     const bottomMin = Math.min(maxBottom, minTop + metaLength);
-    let topY = clamp(baseRect.y + edgePadding, minTop, topMax);
-    let bottomY = clamp(baseRect.y + baseRect.height - edgePadding, bottomMin, maxBottom);
+    let topY = clamp(contentBase.y + edgePadding, minTop, topMax);
+    let bottomY = clamp(
+      contentBase.y + contentBase.height - edgePadding,
+      bottomMin,
+      maxBottom,
+    );
     if (dateLine && metaLine) {
       const minGapBetween = fontSize;
       const gap = bottomY - metaLength - (topY + dateLength);
@@ -454,10 +460,10 @@ function buildPreviewSvg(
     return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
 
-  const bottomBounds = { left: baseRect.x, right: baseRect.x + baseRect.width };
+  const bottomBounds = { left: contentBase.x, right: contentBase.x + contentBase.width };
   const leftX = bottomBounds.left;
   const rightX = bottomBounds.right;
-  const desiredTop = baseRect.y + baseRect.height + minGap;
+  const desiredTop = imageBase.y + imageBase.height + minGap;
   const textY = Math.min(desiredTop + ascent, canvas.height - descent);
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
@@ -507,7 +513,7 @@ async function buildStampedImage(
 
   const overlays = [{ input: resized, top: imageRect.y, left: imageRect.x }];
   if (options.includeText) {
-    let textRect: Bounds = imageRect;
+    let contentRect: Bounds | null = null;
     try {
       const contentBounds = await detectContentBounds(
         resized,
@@ -515,7 +521,7 @@ async function buildStampedImage(
         imageRect.height,
       );
       if (contentBounds) {
-        textRect = {
+        contentRect = {
           x: imageRect.x + contentBounds.x,
           y: imageRect.y + contentBounds.y,
           width: contentBounds.width,
@@ -528,7 +534,7 @@ async function buildStampedImage(
     const svg = buildPreviewSvg(meta, layout, {
       width: canvasSize.width,
       height: canvasSize.height,
-    }, textRect);
+    }, imageRect, contentRect ?? undefined);
     overlays.push({ input: Buffer.from(svg), top: 0, left: 0 });
   }
 
