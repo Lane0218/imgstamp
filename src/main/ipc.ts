@@ -464,7 +464,7 @@ function buildPreviewSvg(
     const metaSvg = metaLine
       ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
       : '';
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
 
   const bottomBounds = { left: contentBase.x, right: contentBase.x + contentBase.width };
@@ -479,7 +479,7 @@ function buildPreviewSvg(
   const maxBaseline = canvas.height - edgeSafe - descent;
   const textY = Math.min(minBaseline, maxBaseline);
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
 }
 
 async function buildStampedImage(
