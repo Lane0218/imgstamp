@@ -70,6 +70,7 @@ type Layout = {
 type SourceInfo = { width: number; height: number };
 type Typography = { fontSize: number; paddingX: number; paddingY: number };
 type Bounds = { x: number; y: number; width: number; height: number };
+type TextRun = { text: string; script: 'cjk' | 'latin' };
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -256,6 +257,52 @@ function estimateTextLength(text: string, fontSize: number): number {
   return units * fontSize;
 }
 
+function escapeSvgText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function isCjkCode(code: number): boolean {
+  return (
+    (code >= 0x4e00 && code <= 0x9fff) ||
+    (code >= 0x3400 && code <= 0x4dbf) ||
+    (code >= 0x3040 && code <= 0x30ff) ||
+    (code >= 0xac00 && code <= 0xd7af) ||
+    (code >= 0x3000 && code <= 0x303f)
+  );
+}
+
+function splitTextRuns(text: string): TextRun[] {
+  if (!text) {
+    return [];
+  }
+  const runs: TextRun[] = [];
+  let buffer = '';
+  let currentScript: TextRun['script'] | null = null;
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    const script: TextRun['script'] = isCjkCode(code) ? 'cjk' : 'latin';
+    if (currentScript && script !== currentScript) {
+      runs.push({ text: buffer, script: currentScript });
+      buffer = '';
+    }
+    currentScript = script;
+    buffer += char;
+  }
+  if (buffer && currentScript) {
+    runs.push({ text: buffer, script: currentScript });
+  }
+  return runs;
+}
+
+function buildStyledText(text: string): string {
+  return splitTextRuns(text)
+    .map((run) => `<tspan class="${run.script}">${escapeSvgText(run.text)}</tspan>`)
+    .join('');
+}
+
 async function detectContentBounds(
   buffer: Buffer,
   width: number,
@@ -413,14 +460,9 @@ function buildPreviewSvg(
     height: layout.imageArea.height,
   };
   const contentBase = contentRect ?? imageBase;
-  const safe = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  const dateText = meta.date ? safe(meta.date) : '';
-  const locationText = meta.location ? safe(meta.location) : '';
-  const descText = meta.description ? safe(meta.description) : '';
+  const dateText = meta.date ?? '';
+  const locationText = meta.location ?? '';
+  const descText = meta.description ?? '';
   const leftLine = [locationText, descText].filter(Boolean).join(' ｜ ');
   const rightLine = dateText;
 
@@ -459,12 +501,12 @@ function buildPreviewSvg(
       }
     }
     const dateSvg = dateLine
-      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})" xml:space="preserve">${buildStyledText(dateLine)}</text>`
       : '';
     const metaSvg = metaLine
-      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})" xml:space="preserve">${buildStyledText(metaLine)}</text>`
       : '';
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n    .latin { font-family: "Times New Roman", "Times", serif; }\n    .cjk { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
 
   const bottomBounds = { left: contentBase.x, right: contentBase.x + contentBase.width };
@@ -479,7 +521,7 @@ function buildPreviewSvg(
   const maxBaseline = canvas.height - edgeSafe - descent;
   const textY = Math.min(minBaseline, maxBaseline);
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n    .latin { font-family: "Times New Roman", "Times", serif; }\n    .cjk { font-family: "FangSong", "FangSong_GB2312", "仿宋", "Microsoft YaHei", "Segoe UI", sans-serif; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}" xml:space="preserve">${buildStyledText(leftLine)}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end" xml:space="preserve">${buildStyledText(rightLine)}</text>\n</svg>`;
 }
 
 async function buildStampedImage(
