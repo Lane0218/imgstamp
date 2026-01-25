@@ -415,7 +415,11 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   if (isRight) {
-    const anchorX = Math.min(imageBase.x + imageBase.width + minGap, canvas.width - minGap);
+    const maxAnchorX = canvas.width - minGap - descent;
+    const anchorX = Math.min(
+      imageBase.x + imageBase.width + minGap + ascent,
+      maxAnchorX,
+    );
     const edgePadding = minGap;
     const minTop = edgePadding;
     const maxBottom = canvas.height - edgePadding;
