@@ -270,6 +270,8 @@ select {
   padding: 12px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: var(--thumb-row-height);
+  align-content: start;
   gap: 10px;
   overflow: hidden;
   flex: 1;
