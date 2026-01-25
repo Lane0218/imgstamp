@@ -54,7 +54,8 @@ const TYPOGRAPHY_RATIOS = {
   paddingY: 0,
 } as const;
 const TEXT_ASCENT_RATIO = 0.8;
-const TEXT_IMAGE_GAP_MIN_RATIO = 0.2;
+const TEXT_IMAGE_GAP_MIN_RATIO = 0.3;
+const TEXT_BORDER_RATIO = 2.5;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -344,6 +345,7 @@ function buildLayout(
   options: { includeText: boolean; mode: LayoutMode },
 ): Layout {
   const typography = getTypography(canvas);
+  const textBorder = Math.ceil(typography.fontSize * TEXT_BORDER_RATIO);
   const nonTextX = Math.round(canvas.width * LAYOUT_RATIOS.nonText);
   const nonTextY = Math.round(canvas.height * LAYOUT_RATIOS.nonText);
   let top = nonTextY;
@@ -352,11 +354,12 @@ function buildLayout(
   let right = nonTextX;
 
   if (options.includeText && options.mode === 'bottom') {
-    bottom = typography.fontSize * 2;
+    bottom = textBorder;
   }
 
   if (options.includeText && options.mode === 'right') {
-    right = typography.fontSize * 2;
+    right = textBorder;
+    left = Math.max(left, right);
   }
 
   const imageArea = {
@@ -402,7 +405,7 @@ function buildPreviewSvg(
   const isRight = layout.mode === 'right';
   const ascent = Math.round(fontSize * TEXT_ASCENT_RATIO);
   const descent = Math.max(1, fontSize - ascent);
-  const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
+  const minGap = Math.ceil(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
   const imageBase = imageRect ?? {
     x: layout.imageArea.x,
     y: layout.imageArea.y,
