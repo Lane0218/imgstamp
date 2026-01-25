@@ -193,9 +193,8 @@ function resolveImageRect(
   if (layout.mode === 'bottom') {
     const spaceY = Math.max(0, layout.imageArea.height - height);
     const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
-    let bottomGap = Math.max(0, Math.round((spaceY - layout.textArea.height) / 2));
-    bottomGap = Math.min(Math.max(bottomGap, minGap), spaceY);
-    const topGap = spaceY - bottomGap;
+    const bottomGap = Math.min(spaceY, minGap);
+    const topGap = Math.max(0, spaceY - bottomGap);
     y = layout.imageArea.y + topGap;
     const spaceX = Math.max(0, layout.imageArea.width - width);
     x = layout.imageArea.x + Math.round(spaceX / 2);
@@ -204,9 +203,8 @@ function resolveImageRect(
   if (layout.mode === 'right') {
     const spaceX = Math.max(0, layout.imageArea.width - width);
     const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
-    let rightGap = Math.max(0, Math.round((spaceX - layout.textArea.width) / 2));
-    rightGap = Math.min(Math.max(rightGap, minGap), spaceX);
-    const leftGap = spaceX - rightGap;
+    const rightGap = Math.min(spaceX, minGap);
+    const leftGap = Math.max(0, spaceX - rightGap);
     x = layout.imageArea.x + leftGap;
     const spaceY = Math.max(0, layout.imageArea.height - height);
     y = layout.imageArea.y + Math.round(spaceY / 2);
@@ -221,6 +219,34 @@ function getTypography(canvas: { width: number; height: number }): Typography {
     paddingX: Math.round(canvas.width * TYPOGRAPHY_RATIOS.paddingX),
     paddingY: Math.round(canvas.height * TYPOGRAPHY_RATIOS.paddingY),
   };
+}
+
+function estimateTextLength(text: string, fontSize: number): number {
+  if (!text) {
+    return 0;
+  }
+  let units = 0;
+  for (const char of text) {
+    const code = char.codePointAt(0) ?? 0;
+    if (char === ' ') {
+      units += 0.3;
+    } else if (char === '|' || char === '｜') {
+      units += 0.4;
+    } else if (char === '-' || char === '·' || char === '—') {
+      units += 0.4;
+    } else if ((code >= 0x30 && code <= 0x39) || (code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) {
+      units += 0.6;
+    } else if (
+      (code >= 0x4e00 && code <= 0x9fff) ||
+      (code >= 0x3040 && code <= 0x30ff) ||
+      (code >= 0xac00 && code <= 0xd7af)
+    ) {
+      units += 1.0;
+    } else {
+      units += 0.7;
+    }
+  }
+  return units * fontSize;
 }
 
 async function detectContentBounds(
@@ -403,21 +429,30 @@ function buildPreviewSvg(
     const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
     const minTop = layout.textArea.y + edgePadding;
     const maxBottom = layout.textArea.y + layout.textArea.height - edgePadding;
-    let topY = Math.max(baseRect.y + edgePadding, minTop);
-    let bottomY = Math.min(baseRect.y + baseRect.height - edgePadding, maxBottom);
-    const minGap = fontSize;
-    if (bottomY - topY < minGap) {
-      const mid = (minTop + maxBottom) / 2;
-      topY = mid - minGap / 2;
-      bottomY = mid + minGap / 2;
-    }
     const dateLine = rightLine;
     const metaLine = leftLine;
+    const dateLength = estimateTextLength(meta.date ?? '', fontSize);
+    const metaLength = estimateTextLength(
+      [meta.location ?? '', meta.description ?? ''].filter(Boolean).join(' ｜ '),
+      fontSize,
+    );
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(Math.max(value, min), Math.max(min, max));
+    const topMax = Math.max(minTop, maxBottom - dateLength);
+    const bottomMin = Math.min(maxBottom, minTop + metaLength);
+    let topY = clamp(baseRect.y + edgePadding, minTop, topMax);
+    let bottomY = clamp(baseRect.y + baseRect.height - edgePadding, bottomMin, maxBottom);
+    const minGap = fontSize;
+    const gap = bottomY - metaLength - (topY + dateLength);
+    if (gap < minGap) {
+      topY = minTop;
+      bottomY = maxBottom;
+    }
     const dateSvg = dateLine
-      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
       : '';
     const metaSvg = metaLine
-      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
+      ? `<text class="label" x="${anchorX}" y="${bottomY}" text-anchor="start" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${bottomY})">${metaLine}</text>`
       : '';
     return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }

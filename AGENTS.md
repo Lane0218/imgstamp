@@ -39,3 +39,4 @@
   - `feat: 添加项目保存/加载`
   - `fix: 处理 EXIF 缺失日期`
   - `chore: 更新依赖`
+- 每次修改完成后，必须由 AI 按此规范填写 commit message，并执行 commit + push。
