@@ -180,32 +180,39 @@ function resolveImageRect(
   layout: Layout,
   fontSize: number,
 ): Bounds {
-  const scale = Math.min(
-    layout.imageArea.width / sourceInfo.width,
-    layout.imageArea.height / sourceInfo.height,
-  );
+  const textBorder = Math.ceil(fontSize * TEXT_BORDER_RATIO);
+  const canvasWidth = layout.imageArea.width;
+  const canvasHeight = layout.imageArea.height;
+  const maxWidth =
+    layout.mode === 'right' ? Math.max(1, canvasWidth - textBorder) : canvasWidth;
+  const maxHeight =
+    layout.mode === 'bottom' ? Math.max(1, canvasHeight - textBorder) : canvasHeight;
+  const scale = Math.min(maxWidth / sourceInfo.width, maxHeight / sourceInfo.height);
   const width = Math.round(sourceInfo.width * scale);
   const height = Math.round(sourceInfo.height * scale);
-  let x = layout.imageArea.x;
-  let y = layout.imageArea.y;
+  let x = Math.round((canvasWidth - width) / 2);
+  let y = Math.round((canvasHeight - height) / 2);
 
   if (layout.mode === 'bottom') {
-    const spaceY = Math.max(0, layout.imageArea.height - height);
-    const topGap = Math.round(spaceY / 2);
-    y = layout.imageArea.y + topGap;
-    const spaceX = Math.max(0, layout.imageArea.width - width);
-    x = layout.imageArea.x + Math.round(spaceX / 2);
+    const bottomMargin = canvasHeight - (y + height);
+    if (bottomMargin < textBorder) {
+      y -= textBorder - bottomMargin;
+    }
   }
 
   if (layout.mode === 'right') {
-    const spaceX = Math.max(0, layout.imageArea.width - width);
-    const leftGap = Math.round(spaceX / 2);
-    x = layout.imageArea.x + leftGap;
-    const spaceY = Math.max(0, layout.imageArea.height - height);
-    y = layout.imageArea.y + Math.round(spaceY / 2);
+    const rightMargin = canvasWidth - (x + width);
+    if (rightMargin < textBorder) {
+      x -= textBorder - rightMargin;
+    }
   }
 
-  return { x, y, width, height };
+  return {
+    x: layout.imageArea.x + x,
+    y: layout.imageArea.y + y,
+    width,
+    height,
+  };
 }
 
 function getTypography(canvas: { width: number; height: number }): Typography {
@@ -346,48 +353,31 @@ function buildLayout(
 ): Layout {
   const typography = getTypography(canvas);
   const textBorder = Math.ceil(typography.fontSize * TEXT_BORDER_RATIO);
-  const nonTextX = Math.round(canvas.width * LAYOUT_RATIOS.nonText);
-  const nonTextY = Math.round(canvas.height * LAYOUT_RATIOS.nonText);
-  let top = nonTextY;
-  let bottom = nonTextY;
-  let left = nonTextX;
-  let right = nonTextX;
-
-  if (options.includeText && options.mode === 'bottom') {
-    bottom = textBorder;
-  }
-
-  if (options.includeText && options.mode === 'right') {
-    right = textBorder;
-    left = Math.max(left, right);
-  }
-
   const imageArea = {
-    x: left,
-    y: top,
-    width: canvas.width - left - right,
-    height: canvas.height - top - bottom,
+    x: 0,
+    y: 0,
+    width: canvas.width,
+    height: canvas.height,
   };
-
   const textArea = options.includeText
     ? options.mode === 'bottom'
       ? {
-          x: left,
-          y: canvas.height - bottom,
-          width: canvas.width - left - right,
-          height: bottom,
+          x: 0,
+          y: canvas.height - textBorder,
+          width: canvas.width,
+          height: textBorder,
         }
       : {
-          x: canvas.width - right,
-          y: top,
-          width: right,
-          height: canvas.height - top - bottom,
+          x: canvas.width - textBorder,
+          y: 0,
+          width: textBorder,
+          height: canvas.height,
         }
     : { x: 0, y: 0, width: 0, height: 0 };
 
   return {
     mode: options.mode,
-    margins: { top, right, bottom, left },
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
     imageArea,
     textArea,
   };
