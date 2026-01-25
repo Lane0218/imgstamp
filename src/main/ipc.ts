@@ -54,8 +54,7 @@ const TYPOGRAPHY_RATIOS = {
   paddingY: 0,
 } as const;
 const TEXT_ASCENT_RATIO = 0.8;
-const RIGHT_TEXT_EDGE_PADDING_RATIO = 0.9;
-const RIGHT_TEXT_ANCHOR_OFFSET_RATIO = 0.6;
+const TEXT_IMAGE_GAP_MIN_RATIO = 0.2;
 const RECENT_LIMIT = 10;
 const RECENT_FILE = path.join(app.getPath('userData'), 'recent-projects.json');
 
@@ -400,7 +399,15 @@ function buildPreviewSvg(
   const typography = getTypography(canvas);
   const fontSize = typography.fontSize;
   const isRight = layout.mode === 'right';
-  const textY = layout.textArea.y + Math.round(fontSize * TEXT_ASCENT_RATIO);
+  const ascent = Math.round(fontSize * TEXT_ASCENT_RATIO);
+  const descent = Math.max(1, fontSize - ascent);
+  const minGap = Math.round(fontSize * TEXT_IMAGE_GAP_MIN_RATIO);
+  const baseRect = imageRect ?? {
+    x: layout.imageArea.x,
+    y: layout.imageArea.y,
+    width: layout.imageArea.width,
+    height: layout.imageArea.height,
+  };
   const safe = (value: string) =>
     value
       .replace(/&/g, '&amp;')
@@ -413,17 +420,10 @@ function buildPreviewSvg(
   const rightLine = dateText;
 
   if (isRight) {
-    const baseRect = imageRect ?? {
-      x: layout.imageArea.x,
-      y: layout.imageArea.y,
-      width: layout.imageArea.width,
-      height: layout.imageArea.height,
-    };
-    const anchorX =
-      layout.textArea.x + Math.round(fontSize * RIGHT_TEXT_ANCHOR_OFFSET_RATIO);
-    const edgePadding = Math.round(fontSize * RIGHT_TEXT_EDGE_PADDING_RATIO);
-    const minTop = layout.textArea.y + edgePadding;
-    const maxBottom = layout.textArea.y + layout.textArea.height - edgePadding;
+    const anchorX = Math.min(baseRect.x + baseRect.width + minGap, canvas.width - minGap);
+    const edgePadding = minGap;
+    const minTop = edgePadding;
+    const maxBottom = canvas.height - edgePadding;
     const dateLine = rightLine;
     const metaLine = leftLine;
     const dateLength = estimateTextLength(meta.date ?? '', fontSize);
@@ -437,11 +437,13 @@ function buildPreviewSvg(
     const bottomMin = Math.min(maxBottom, minTop + metaLength);
     let topY = clamp(baseRect.y + edgePadding, minTop, topMax);
     let bottomY = clamp(baseRect.y + baseRect.height - edgePadding, bottomMin, maxBottom);
-    const minGap = fontSize;
-    const gap = bottomY - metaLength - (topY + dateLength);
-    if (gap < minGap) {
-      topY = minTop;
-      bottomY = maxBottom;
+    if (dateLine && metaLine) {
+      const minGapBetween = fontSize;
+      const gap = bottomY - metaLength - (topY + dateLength);
+      if (gap < minGapBetween) {
+        topY = clamp(minTop, minTop, topMax);
+        bottomY = clamp(maxBottom, bottomMin, maxBottom);
+      }
     }
     const dateSvg = dateLine
       ? `<text class="label" x="${anchorX}" y="${topY}" text-anchor="end" dominant-baseline="middle" transform="rotate(-90 ${anchorX} ${topY})">${dateLine}</text>`
@@ -452,13 +454,11 @@ function buildPreviewSvg(
     return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  ${dateSvg}\n  ${metaSvg}\n</svg>`;
   }
 
-  const bottomBounds = imageRect
-    ? { left: imageRect.x, right: imageRect.x + imageRect.width }
-    : { left: layout.textArea.x, right: layout.textArea.x + layout.textArea.width };
-  const leftX = isRight ? layout.textArea.x : bottomBounds.left;
-  const rightX = isRight
-    ? canvas.width - layout.margins.left
-    : bottomBounds.right;
+  const bottomBounds = { left: baseRect.x, right: baseRect.x + baseRect.width };
+  const leftX = bottomBounds.left;
+  const rightX = bottomBounds.right;
+  const desiredTop = baseRect.y + baseRect.height + minGap;
+  const textY = Math.min(desiredTop + ascent, canvas.height - descent);
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">\n  <style>\n    .label { font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif; fill: #111827; font-size: ${fontSize}px; font-weight: 400; }\n  </style>\n  <text class="label" x="${leftX}" y="${textY}">${leftLine}</text>\n  <text class="label" x="${rightX}" y="${textY}" text-anchor="end">${rightLine}</text>\n</svg>`;
 }
