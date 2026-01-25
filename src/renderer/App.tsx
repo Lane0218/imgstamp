@@ -669,6 +669,11 @@ export function App() {
   ).length;
   const canExport = Boolean(baseDir && selectedPhotos.length > 0 && incompleteCount === 0);
   const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
+  const currentIndex = currentPhotoId
+    ? photos.findIndex((photo) => photo.id === currentPhotoId)
+    : -1;
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex >= 0 && currentIndex < photos.length - 1;
   const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
   const pageStart = pageIndex * pageSize;
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
@@ -820,6 +825,43 @@ export function App() {
     );
   };
 
+  const getCurrentIndex = () => {
+    if (!currentPhotoId) {
+      return -1;
+    }
+    return photos.findIndex((photo) => photo.id === currentPhotoId);
+  };
+
+  const selectPhotoAtIndex = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= photos.length) {
+      return;
+    }
+    const target = photos[targetIndex];
+    setCurrentPhotoId(target.id);
+    setMultiSelectedIds([target.id]);
+    setSelectionAnchorIndex(targetIndex);
+    const nextPage = Math.floor(targetIndex / pageSize);
+    if (nextPage !== pageIndex) {
+      setPageIndex(nextPage);
+    }
+  };
+
+  const handleSelectPrev = () => {
+    const currentIndex = getCurrentIndex();
+    if (currentIndex <= 0) {
+      return;
+    }
+    selectPhotoAtIndex(currentIndex - 1);
+  };
+
+  const handleSelectNext = () => {
+    const currentIndex = getCurrentIndex();
+    if (currentIndex < 0 || currentIndex >= photos.length - 1) {
+      return;
+    }
+    selectPhotoAtIndex(currentIndex + 1);
+  };
+
   const handleCopyPrev = () => {
     if (!currentPhoto) {
       return;
@@ -843,11 +885,10 @@ export function App() {
     updateCurrentMeta({ date: currentPhoto.meta.exifDate });
   };
 
-  const handleApplyToSelected = () => {
+  const applyMetaToSelected = (partial: Pick<PhotoMeta, 'date' | 'location' | 'description'>) => {
     if (!currentPhoto || multiSelectedIds.length < 2) {
       return;
     }
-    const { date, location, description } = currentPhoto.meta;
     setPhotos((prev) =>
       prev.map((photo) =>
         multiSelectedSet.has(photo.id)
@@ -855,15 +896,94 @@ export function App() {
               ...photo,
               meta: {
                 ...photo.meta,
-                date,
-                location,
-                description,
+                ...partial,
               },
             }
           : photo,
       ),
     );
   };
+
+  const handleApplyDateToSelected = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    applyMetaToSelected({ date: currentPhoto.meta.date });
+  };
+
+  const handleApplyLocationToSelected = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    applyMetaToSelected({ location: currentPhoto.meta.location });
+  };
+
+  const handleApplyDescriptionToSelected = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    applyMetaToSelected({ description: currentPhoto.meta.description });
+  };
+
+  const toggleCurrentSelected = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        photo.id === currentPhoto.id ? { ...photo, selected: !photo.selected } : photo,
+      ),
+    );
+  };
+
+  useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) {
+        return false;
+      }
+      const tagName = target.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+        return true;
+      }
+      return target.isContentEditable;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        handleExport();
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        handleSelectPrev();
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        handleSelectNext();
+        return;
+      }
+
+      if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+        toggleCurrentSelected();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleExport, handleSelectPrev, handleSelectNext, toggleCurrentSelected]);
 
   const handleThumbnailClick = (
     event: React.MouseEvent<HTMLButtonElement>,
@@ -1166,16 +1286,36 @@ export function App() {
             </label>
           </div>
           <div className="form-actions">
-            <button className="btn btn--primary" onClick={handleCopyPrev} disabled={!currentPhoto}>
-              复制上一张信息
+            <button
+              className="btn btn--ghost"
+              onClick={handleSelectPrev}
+              disabled={!currentPhoto || !canGoPrev}
+            >
+              上一张
             </button>
             <button
               className="btn btn--ghost"
-              onClick={handleApplyToSelected}
-              disabled={!currentPhoto || multiSelectedCount < 2}
+              onClick={handleSelectNext}
+              disabled={!currentPhoto || !canGoNext}
             >
-              应用到所有选中
+              下一张
             </button>
+            <button className="btn btn--primary" onClick={handleCopyPrev} disabled={!currentPhoto}>
+              复制上一张信息
+            </button>
+            {multiSelectedCount >= 2 ? (
+              <>
+                <button className="btn btn--ghost" onClick={handleApplyDateToSelected}>
+                  应用日期
+                </button>
+                <button className="btn btn--ghost" onClick={handleApplyLocationToSelected}>
+                  应用地点
+                </button>
+                <button className="btn btn--ghost" onClick={handleApplyDescriptionToSelected}>
+                  应用描述
+                </button>
+              </>
+            ) : null}
           </div>
         </aside>
         <div
