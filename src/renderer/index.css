@@ -156,6 +156,15 @@ select {
   width: 100%;
 }
 
+.btn--hero {
+  min-height: 58px;
+  padding: 0 24px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 16px;
+  letter-spacing: 0.2px;
+}
+
 .btn--compact {
   height: 30px;
   min-height: 30px;
@@ -1017,8 +1026,13 @@ select {
 
 .launcher-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+}
+
+.launcher-actions .btn--hero {
+  flex: 1;
+  min-width: 200px;
 }
 
 .launcher-hint {

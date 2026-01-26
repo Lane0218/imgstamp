@@ -181,10 +181,10 @@ export function Launcher() {
             <>
               <div className="launcher-card__title">开始一个项目</div>
               <div className="launcher-actions">
-                <button className="btn btn--primary" onClick={() => setView('create')}>
+                <button className="btn btn--primary btn--hero" onClick={() => setView('create')}>
                   新建项目
                 </button>
-                <button className="btn" onClick={handleOpenProject}>
+                <button className="btn btn--primary btn--hero" onClick={handleOpenProject}>
                   打开项目
                 </button>
               </div>
