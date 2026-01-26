@@ -15,6 +15,7 @@ module.exports = {
           owner: 'Lane0218',
           name: 'imgstamp',
         },
+        draft: false,
       },
     },
   ],
