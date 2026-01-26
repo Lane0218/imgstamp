@@ -672,6 +672,7 @@ export function App() {
   const currentIndex = currentPhotoId
     ? photos.findIndex((photo) => photo.id === currentPhotoId)
     : -1;
+  const multiSelectedCount = multiSelectedIds.length;
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex >= 0 && currentIndex < photos.length - 1;
   const canApplyToSelected = Boolean(currentPhoto && multiSelectedCount >= 2);
@@ -679,7 +680,6 @@ export function App() {
   const pageStart = pageIndex * pageSize;
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
   const pageItems = buildPageItems(totalPages, pageIndex);
-  const multiSelectedCount = multiSelectedIds.length;
   const multiSelectedSet = useMemo(() => new Set(multiSelectedIds), [multiSelectedIds]);
 
   useEffect(() => {
