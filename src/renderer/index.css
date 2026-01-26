@@ -19,13 +19,13 @@ body,
   --text: #1f2a33;
   --muted: #6b645a;
   --disabled: #a79f93;
-  --primary: #0f766e;
+  --primary: #127fc7;
   --primary-contrast: #f9f6f1;
-  --success: #1b9e77;
+  --success: #03a6e8;
   --warning: #e07a34;
   --error: #c44d4d;
   --shadow: 0 10px 24px rgba(31, 42, 51, 0.08);
-  --focus-ring: 0 0 0 2px rgba(15, 118, 110, 0.35);
+  --focus-ring: 0 0 0 2px rgba(18, 127, 199, 0.35);
   --radius-card: 12px;
   --radius-input: 10px;
   --radius-button: 10px;
@@ -49,7 +49,7 @@ body {
   margin: 0;
   background-color: var(--bg);
   background-image:
-    radial-gradient(1200px 800px at -10% -20%, rgba(15, 118, 110, 0.12), transparent 60%),
+    radial-gradient(1200px 800px at -10% -20%, rgba(18, 127, 199, 0.12), transparent 60%),
     radial-gradient(900px 700px at 110% 10%, rgba(224, 122, 52, 0.12), transparent 60%),
     linear-gradient(180deg, #f6f1ea 0%, #f2ede6 45%, #f7f2ec 100%),
     repeating-linear-gradient(
@@ -108,26 +108,26 @@ select {
 }
 
 .btn--primary {
-  background: linear-gradient(180deg, #189c90 0%, #0f766e 100%);
+  background: linear-gradient(180deg, #03a6e8 0%, #1e63ae 100%);
   color: var(--primary-contrast);
-  border-color: #0f766e;
-  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.28);
+  border-color: #1e63ae;
+  box-shadow: 0 8px 18px rgba(18, 127, 199, 0.28);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #1cb0a2 0%, #0f766e 100%);
-  border-color: #0f766e;
+  background: linear-gradient(180deg, #27b7f0 0%, #1e63ae 100%);
+  border-color: #1e63ae;
 }
 
 .btn--primary-soft {
-  background: linear-gradient(180deg, #9fe1da 0%, #45b9b0 100%);
-  border-color: #45b9b0;
-  box-shadow: 0 6px 14px rgba(69, 185, 176, 0.2);
+  background: linear-gradient(180deg, #b8e6fb 0%, #6abfe6 100%);
+  border-color: #6abfe6;
+  box-shadow: 0 6px 14px rgba(106, 191, 230, 0.2);
 }
 
 .btn--primary-soft:hover:not(:disabled) {
-  background: linear-gradient(180deg, #aee7e0 0%, #45b9b0 100%);
-  border-color: #45b9b0;
+  background: linear-gradient(180deg, #c7edfd 0%, #6abfe6 100%);
+  border-color: #6abfe6;
 }
 
 .btn--ghost {
@@ -139,7 +139,7 @@ select {
 
 .btn--ghost:hover:not(:disabled) {
   background: rgba(255, 243, 229, 0.9);
-  border-color: rgba(15, 118, 110, 0.35);
+  border-color: rgba(18, 127, 199, 0.35);
   transform: translateY(-1px);
 }
 
@@ -184,8 +184,8 @@ select {
 }
 
 .btn.is-active {
-  background: rgba(15, 118, 110, 0.12);
-  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(18, 127, 199, 0.12);
+  border-color: rgba(18, 127, 199, 0.35);
 }
 
 .btn:focus-visible {
@@ -279,7 +279,7 @@ select {
   right: 16px;
   bottom: -1px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(15, 118, 110, 0.25), transparent);
+  background: linear-gradient(90deg, transparent, rgba(18, 127, 199, 0.25), transparent);
   opacity: 0.7;
 }
 
@@ -408,14 +408,14 @@ select {
 
 .thumb-cell--active {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2), 0 12px 24px rgba(15, 118, 110, 0.18);
-  background: rgba(15, 118, 110, 0.08);
+  box-shadow: 0 0 0 2px rgba(18, 127, 199, 0.2), 0 12px 24px rgba(18, 127, 199, 0.18);
+  background: rgba(18, 127, 199, 0.08);
 }
 
 .thumb-cell--multi {
-  border-color: rgba(15, 118, 110, 0.45);
-  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2), 0 10px 18px rgba(31, 42, 51, 0.1);
-  background: rgba(15, 118, 110, 0.12);
+  border-color: rgba(18, 127, 199, 0.45);
+  box-shadow: 0 0 0 2px rgba(18, 127, 199, 0.2), 0 10px 18px rgba(31, 42, 51, 0.1);
+  background: rgba(18, 127, 199, 0.12);
 }
 
 .thumb-frame {
@@ -480,7 +480,7 @@ select {
 
 .thumb-select--ok {
   background: transparent;
-  border-color: rgba(27, 158, 119, 0.5);
+  border-color: rgba(18, 127, 199, 0.5);
 }
 
 .thumb-select--ok::after {
@@ -726,7 +726,7 @@ select {
 
 .status-bar__progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1b9e77, #0f766e);
+  background: linear-gradient(90deg, #03a6e8, #1e63ae);
   transition: width 0.2s ease;
 }
 
@@ -764,8 +764,8 @@ select {
 
 .pager__item:hover {
   color: var(--primary);
-  border-color: rgba(15, 118, 110, 0.25);
-  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(18, 127, 199, 0.25);
+  background: rgba(18, 127, 199, 0.08);
 }
 
 .pager__item:focus-visible {
@@ -777,8 +777,8 @@ select {
 .pager__item--active {
   font-weight: 600;
   color: var(--primary);
-  border-color: rgba(15, 118, 110, 0.35);
-  background: rgba(15, 118, 110, 0.12);
+  border-color: rgba(18, 127, 199, 0.35);
+  background: rgba(18, 127, 199, 0.12);
 }
 
 .pager__ellipsis {
@@ -797,7 +797,7 @@ select {
 }
 
 .splitter:hover {
-  background: rgba(15, 118, 110, 0.12);
+  background: rgba(18, 127, 199, 0.12);
 }
 
 .splitter--left {
