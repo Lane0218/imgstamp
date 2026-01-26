@@ -21,7 +21,7 @@ body,
   --disabled: #a79f93;
   --primary: #127fc7;
   --primary-contrast: #f9f6f1;
-  --success: #03a6e8;
+  --success: #16a34a;
   --warning: #e07a34;
   --error: #c44d4d;
   --shadow: 0 10px 24px rgba(31, 42, 51, 0.08);
@@ -353,7 +353,6 @@ select {
   border-radius: 999px;
   background: #cbd5e1;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
 }
 
 .thumb-legend__dot--ok {
@@ -448,14 +447,14 @@ select {
   width: 20px;
   height: 20px;
   border-radius: 999px;
-  border: 1px solid rgba(31, 42, 51, 0.12);
-  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(31, 42, 51, 0.12);
-  transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  box-shadow: none;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
 }
 
 .thumb-select::after {
@@ -466,12 +465,11 @@ select {
   border: none;
   background: #cbd5e1;
   display: block;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 1px 3px rgba(31, 42, 51, 0.2);
+  box-shadow: none;
 }
 
 .thumb-select--warn {
   background: transparent;
-  border-color: rgba(224, 122, 52, 0.5);
 }
 
 .thumb-select--warn::after {
@@ -480,7 +478,6 @@ select {
 
 .thumb-select--ok {
   background: transparent;
-  border-color: rgba(18, 127, 199, 0.5);
 }
 
 .thumb-select--ok::after {
