@@ -364,6 +364,10 @@ select {
 }
 
 .thumb-legend__dot--toggle {
+  padding: 0;
+  border-radius: 999px;
+  width: 10px;
+  height: 10px;
   border: 1px solid rgba(31, 42, 51, 0.25);
   background: transparent;
   cursor: pointer;

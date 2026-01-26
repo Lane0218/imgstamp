@@ -1089,9 +1089,6 @@ export function App() {
                 aria-label={allSelected ? '取消全选' : '全选'}
                 title={allSelected ? '取消全选' : '全选'}
               />
-              <span className="thumb-legend__item">
-                {allSelected ? '取消全选' : '全选'}
-              </span>
             </div>
           </div>
 
