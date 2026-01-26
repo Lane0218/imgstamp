@@ -1278,7 +1278,7 @@ export function App() {
               <span>描述</span>
               <input
                 type="text"
-                placeholder="记录当下的心情或事件（限单行）..."
+                placeholder="记录当下的心情或事件..."
                 value={currentPhoto?.meta.description ?? ''}
                 onChange={(event) => updateCurrentMeta({ description: event.target.value })}
                 disabled={!currentPhoto}
