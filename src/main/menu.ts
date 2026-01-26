@@ -49,7 +49,14 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
             sendToRenderer(mainWindow, 'menu:about', {
               title: '关于 ImgStamp',
               subtitle: 'ImgStamp',
-              lines: [`版本 ${app.getVersion()}`, '本地照片批量加白边与文字标注工具。'],
+              lines: [
+                `版本 ${app.getVersion()}`,
+                'ImgStamp：一款个人离线照片整理工具，用于批量为精选照片添加白边与日期/地点/描述标注并导出成品图',
+                '开发者：Lane',
+                '邮箱：laneljc@qq.com',
+                '项目主页：https://github.com/Lane0218/imgstamp',
+                '个人主页：https://www.laneljc.cn/',
+              ],
             }),
         },
         {
