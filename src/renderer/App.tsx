@@ -81,6 +81,16 @@ const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] =>
   return result;
 };
 
+const getNameFromPath = (filePath: string | null): string | null => {
+  if (!filePath) {
+    return null;
+  }
+  const parts = filePath.split(/[/\\]+/);
+  const fileName = parts[parts.length - 1] || '';
+  const withoutExt = fileName.replace(/\.[^/.]+$/, '');
+  return withoutExt || null;
+};
+
 const EXPORT_SIZE_META: Record<
   '5' | '5L' | '6' | '6L',
   { label: string; ratio: string; cm: string }
@@ -116,6 +126,14 @@ export function App() {
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
   const [columnSizes, setColumnSizes] = useState({ left: MIN_LEFT_WIDTH, right: MIN_RIGHT_WIDTH });
+  const dirtyRef = useRef(false);
+  const suppressDirtyRef = useRef(false);
+  const autoSavingRef = useRef(false);
+  const latestProjectRef = useRef<{
+    baseDir: string | null;
+    exportSize: '5' | '5L' | '6' | '6L';
+    photos: PhotoItem[];
+  }>({ baseDir: null, exportSize: '5L', photos: [] });
   const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sizesInitialized = useRef(false);
@@ -217,20 +235,32 @@ export function App() {
     }
   };
 
+  const beginProjectLoad = () => {
+    suppressDirtyRef.current = true;
+  };
+
+  const finishProjectLoad = () => {
+    dirtyRef.current = false;
+    setTimeout(() => {
+      suppressDirtyRef.current = false;
+    }, 0);
+  };
+
+  useEffect(() => {
+    latestProjectRef.current = { baseDir, exportSize, photos };
+  }, [baseDir, exportSize, photos]);
+
+  useEffect(() => {
+    if (!projectPath || suppressDirtyRef.current) {
+      return;
+    }
+    dirtyRef.current = true;
+  }, [projectPath, projectName, baseDir, exportSize, photos]);
+
   useEffect(() => {
     if (!window.imgstamp) {
       return;
     }
-
-    const getNameFromPath = (filePath: string | null) => {
-      if (!filePath) {
-        return null;
-      }
-      const parts = filePath.split(/[/\\]+/);
-      const fileName = parts[parts.length - 1] || '';
-      const withoutExt = fileName.replace(/\.[^/.]+$/, '');
-      return withoutExt || null;
-    };
 
     const toPhotoItem = (item: {
       id: string;
@@ -265,6 +295,7 @@ export function App() {
       dir: string,
       options?: { projectName?: string; projectPath?: string },
     ) => {
+      beginProjectLoad();
       try {
         const scanned = await window.imgstamp.scanImages(dir);
         const nextPhotos = scanned.map(toPhotoItem);
@@ -313,10 +344,13 @@ export function App() {
       } catch (error) {
         setStatusMessage('打开文件夹失败');
         console.error(error);
+      } finally {
+        finishProjectLoad();
       }
     };
 
     const loadProjectByPath = async (projectPath: string) => {
+      beginProjectLoad();
       try {
         const data = await window.imgstamp.loadProject(projectPath);
         const project = data as ProjectData;
@@ -361,6 +395,8 @@ export function App() {
       } catch (error) {
         setStatusMessage('打开项目失败');
         console.error(error);
+      } finally {
+        finishProjectLoad();
       }
     };
 
@@ -436,6 +472,11 @@ export function App() {
         setProjectPath(targetPath);
         setProjectName(nameFromPath);
         setStatusMessage(`已保存项目: ${targetPath}`);
+        dirtyRef.current = false;
+        suppressDirtyRef.current = true;
+        setTimeout(() => {
+          suppressDirtyRef.current = false;
+        }, 0);
         await window.imgstamp.setWindowTitle(nameFromPath);
         if (baseDir) {
           await recordRecent({
@@ -502,6 +543,51 @@ export function App() {
       unsubExportProgress();
     };
   }, [projectPath, projectName, baseDir, photos, exportSize, isExporting]);
+
+  useEffect(() => {
+    if (!window.imgstamp || !projectPath || isExporting) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      if (autoSavingRef.current || !dirtyRef.current) {
+        return;
+      }
+      const { baseDir: latestBaseDir, exportSize: latestSize, photos: latestPhotos } =
+        latestProjectRef.current;
+      if (!latestBaseDir) {
+        return;
+      }
+      const nameFromPath = getNameFromPath(projectPath) || '未命名项目';
+      const projectToSave: ProjectData = {
+        version: '1.0',
+        name: nameFromPath,
+        baseDir: latestBaseDir,
+        exportSize: latestSize,
+        photos: latestPhotos.map((photo) => ({
+          id: photo.id,
+          filename: photo.filename,
+          relativePath: photo.relativePath,
+          selected: photo.selected,
+          meta: photo.meta,
+        })),
+      };
+
+      autoSavingRef.current = true;
+      try {
+        await window.imgstamp.saveProject(projectPath, projectToSave);
+        dirtyRef.current = false;
+        setStatusMessage('自动保存完成');
+      } catch (error) {
+        setStatusMessage('自动保存失败');
+        console.error(error);
+      } finally {
+        autoSavingRef.current = false;
+      }
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [projectPath, isExporting]);
 
   useEffect(() => {
     setZoom(1);

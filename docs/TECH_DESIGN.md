@@ -33,6 +33,7 @@
 - `project:load`: 读取项目 JSON（主进程读）。
 - `export:start`: 开始批量导出任务。
 - `export:progress`: 导出进度回调。
+- **自动保存**：渲染进程每 1 分钟触发 `project:save`（仅已保存过的项目文件，导出中暂停）。
 
 ## 3. 核心模块设计
 
