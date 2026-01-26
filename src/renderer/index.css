@@ -120,14 +120,15 @@ select {
 }
 
 .btn--ghost {
-  background: transparent;
-  border-color: transparent;
+  background: rgba(255, 253, 247, 0.6);
+  border-color: rgba(31, 42, 51, 0.18);
+  color: var(--text);
   box-shadow: none;
 }
 
 .btn--ghost:hover:not(:disabled) {
-  background: rgba(15, 118, 110, 0.08);
-  border-color: rgba(15, 118, 110, 0.2);
+  background: rgba(255, 243, 229, 0.9);
+  border-color: rgba(15, 118, 110, 0.35);
   transform: translateY(-1px);
 }
 

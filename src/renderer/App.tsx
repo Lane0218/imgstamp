@@ -862,22 +862,6 @@ export function App() {
     selectPhotoAtIndex(currentIndex + 1);
   };
 
-  const handleCopyPrev = () => {
-    if (!currentPhoto) {
-      return;
-    }
-    const currentIndex = photos.findIndex((photo) => photo.id === currentPhoto.id);
-    if (currentIndex <= 0) {
-      return;
-    }
-    const prevPhoto = photos[currentIndex - 1];
-    updateCurrentMeta({
-      date: prevPhoto.meta.date,
-      location: prevPhoto.meta.location,
-      description: prevPhoto.meta.description,
-    });
-  };
-
   const handleResetExif = () => {
     if (!currentPhoto) {
       return;
@@ -923,6 +907,17 @@ export function App() {
       return;
     }
     applyMetaToSelected({ description: currentPhoto.meta.description });
+  };
+
+  const handleApplyAllToSelected = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    applyMetaToSelected({
+      date: currentPhoto.meta.date,
+      location: currentPhoto.meta.location,
+      description: currentPhoto.meta.description,
+    });
   };
 
   const toggleCurrentSelected = () => {
@@ -1300,11 +1295,11 @@ export function App() {
             >
               下一张
             </button>
-            <button className="btn btn--primary" onClick={handleCopyPrev} disabled={!currentPhoto}>
-              复制上一张信息
-            </button>
             {multiSelectedCount >= 2 ? (
               <>
+                <button className="btn btn--primary" onClick={handleApplyAllToSelected}>
+                  应用全部
+                </button>
                 <button className="btn btn--ghost" onClick={handleApplyDateToSelected}>
                   应用日期
                 </button>
