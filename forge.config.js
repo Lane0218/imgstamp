@@ -7,6 +7,17 @@ module.exports = {
     icon: 'assets/icon',
   },
   rebuildConfig: {},
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'Lane0218',
+          name: 'imgstamp',
+        },
+      },
+    },
+  ],
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
