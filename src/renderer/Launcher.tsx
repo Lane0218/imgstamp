@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { DragEvent } from 'react';
 import logoUrl from './assets/logo.png';
 
 type RecentProject = {
@@ -27,8 +26,6 @@ export function Launcher() {
   const [folderPath, setFolderPath] = useState('');
   const [projectFilePath, setProjectFilePath] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [dropMessage, setDropMessage] = useState<string | null>(null);
   const canCreate = projectName.trim().length > 0 && folderPath && projectFilePath;
 
   useEffect(() => {
@@ -59,7 +56,6 @@ export function Launcher() {
     if (!path) {
       return;
     }
-    setDropMessage(null);
     await window.imgstamp.launcherOpenProject(path);
   };
 
@@ -72,7 +68,6 @@ export function Launcher() {
     if (!projectName) {
       setProjectName(getNameFromPath(dir));
     }
-    setDropMessage(null);
     setError(null);
   };
 
@@ -122,22 +117,6 @@ export function Launcher() {
     await window.imgstamp.launcherCreateProject({ name, baseDir });
   };
 
-  const handleDrop = async (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setIsDragOver(false);
-    const file = event.dataTransfer.files?.[0];
-    const dropPath = file ? (file as unknown as { path?: string }).path : null;
-    if (!dropPath) {
-      return;
-    }
-    if (!dropPath.toLowerCase().endsWith('.json')) {
-      setDropMessage('仅支持拖入项目 .json 文件');
-      return;
-    }
-    setDropMessage(null);
-    await window.imgstamp.launcherOpenProject(dropPath);
-  };
-
   return (
     <div className="launcher">
       <aside className="launcher__sidebar">
@@ -161,15 +140,7 @@ export function Launcher() {
         </div>
       </aside>
 
-      <main
-        className={`launcher__main ${isDragOver ? 'launcher__main--drag' : ''}`}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setIsDragOver(true);
-        }}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={handleDrop}
-      >
+      <main className="launcher__main">
         <div className="launcher__hero">
           <div className="launcher__logo">
             <img src={logoUrl} alt="ImgStamp" />
@@ -207,8 +178,6 @@ export function Launcher() {
                   <span className="btn__label">打开项目</span>
                 </button>
               </div>
-              <div className="launcher-hint">拖入项目文件（.json）开始</div>
-              {dropMessage ? <div className="launcher-drop">{dropMessage}</div> : null}
             </>
           ) : (
             <>

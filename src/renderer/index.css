@@ -120,14 +120,14 @@ select {
 }
 
 .btn--primary-soft {
-  background: linear-gradient(180deg, #6ec9c0 0%, #2aa198 100%);
-  border-color: #2aa198;
-  box-shadow: 0 6px 14px rgba(42, 161, 152, 0.22);
+  background: linear-gradient(180deg, #9fe1da 0%, #45b9b0 100%);
+  border-color: #45b9b0;
+  box-shadow: 0 6px 14px rgba(69, 185, 176, 0.2);
 }
 
 .btn--primary-soft:hover:not(:disabled) {
-  background: linear-gradient(180deg, #7fd3cb 0%, #2aa198 100%);
-  border-color: #2aa198;
+  background: linear-gradient(180deg, #aee7e0 0%, #45b9b0 100%);
+  border-color: #45b9b0;
 }
 
 .btn--ghost {
@@ -975,10 +975,6 @@ select {
   transition: background-color 0.16s ease, box-shadow 0.16s ease;
 }
 
-.launcher__main--drag {
-  background: rgba(15, 118, 110, 0.08);
-  box-shadow: inset 0 0 0 2px rgba(15, 118, 110, 0.25);
-}
 
 .launcher__hero {
   text-align: center;
@@ -1039,6 +1035,7 @@ select {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  margin-top: 16px;
 }
 
 .launcher-actions .btn--wide {
@@ -1075,16 +1072,6 @@ select {
   font-weight: 600;
   color: var(--primary-contrast);
   letter-spacing: 0.2px;
-}
-
-.launcher-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.launcher-drop {
-  font-size: 12px;
-  color: var(--error);
 }
 
 .launcher-back {
