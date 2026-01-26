@@ -1307,35 +1307,37 @@ export function App() {
                   </svg>
                 </button>
               </div>
+              <div className="form-actions__fields">
+                <button
+                  className="btn btn--ghost"
+                  onClick={handleApplyDateToSelected}
+                  disabled={!canApplyToSelected}
+                >
+                  应用日期
+                </button>
+                <button
+                  className="btn btn--ghost"
+                  onClick={handleApplyLocationToSelected}
+                  disabled={!canApplyToSelected}
+                >
+                  应用地点
+                </button>
+                <button
+                  className="btn btn--ghost"
+                  onClick={handleApplyDescriptionToSelected}
+                  disabled={!canApplyToSelected}
+                >
+                  应用描述
+                </button>
+              </div>
+            </div>
+            <div className="form-actions__row form-actions__row--bottom">
               <button
                 className="btn btn--primary"
                 onClick={handleApplyAllToSelected}
                 disabled={!canApplyToSelected}
               >
                 应用全部
-              </button>
-            </div>
-            <div className="form-actions__row form-actions__row--bottom">
-              <button
-                className="btn btn--ghost"
-                onClick={handleApplyDateToSelected}
-                disabled={!canApplyToSelected}
-              >
-                应用日期
-              </button>
-              <button
-                className="btn btn--ghost"
-                onClick={handleApplyLocationToSelected}
-                disabled={!canApplyToSelected}
-              >
-                应用地点
-              </button>
-              <button
-                className="btn btn--ghost"
-                onClick={handleApplyDescriptionToSelected}
-                disabled={!canApplyToSelected}
-              >
-                应用描述
               </button>
             </div>
           </div>

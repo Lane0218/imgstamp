@@ -649,16 +649,29 @@ select {
 
 .form-actions__row--top {
   justify-content: space-between;
+  align-items: flex-start;
 }
 
 .form-actions__row--bottom {
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .form-actions__nav {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.form-actions__fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+}
+
+.form-actions__fields .btn {
+  width: 100%;
 }
 
 .status-bar {
