@@ -1025,14 +1025,46 @@ select {
 }
 
 .launcher-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
 }
 
-.launcher-actions .btn--hero {
-  flex: 1;
-  min-width: 200px;
+.launcher-actions .btn--square {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.launcher-actions .btn__icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.launcher-actions .btn__icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--primary-contrast);
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.launcher-actions .btn__label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary-contrast);
+  letter-spacing: 0.2px;
 }
 
 .launcher-hint {

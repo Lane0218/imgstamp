@@ -181,11 +181,30 @@ export function Launcher() {
             <>
               <div className="launcher-card__title">开始一个项目</div>
               <div className="launcher-actions">
-                <button className="btn btn--primary btn--hero" onClick={() => setView('create')}>
-                  新建项目
+                <button
+                  className="btn btn--primary btn--hero btn--square"
+                  onClick={() => setView('create')}
+                >
+                  <span className="btn__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <rect x="3" y="4" width="18" height="14" rx="2" />
+                      <path d="M12 8v6" />
+                      <path d="M9 11h6" />
+                    </svg>
+                  </span>
+                  <span className="btn__label">新建项目</span>
                 </button>
-                <button className="btn btn--primary btn--hero" onClick={handleOpenProject}>
-                  打开项目
+                <button
+                  className="btn btn--primary btn--hero btn--square"
+                  onClick={handleOpenProject}
+                >
+                  <span className="btn__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M4 6h6l2 2h8" />
+                      <path d="M4 8h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" />
+                    </svg>
+                  </span>
+                  <span className="btn__label">打开项目</span>
                 </button>
               </div>
               <div className="launcher-hint">拖入项目文件（.json）开始</div>
