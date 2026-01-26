@@ -363,6 +363,23 @@ select {
   flex-shrink: 0;
 }
 
+.thumb-legend__dot--toggle {
+  border: 1px solid rgba(31, 42, 51, 0.25);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.thumb-legend__dot--toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.thumb-legend__dot--active {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
 .thumb-legend__dot--ok {
   background: var(--success);
 }

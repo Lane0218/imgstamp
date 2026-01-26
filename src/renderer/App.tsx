@@ -1081,12 +1081,17 @@ export function App() {
               </span>
               <button
                 type="button"
-                className="btn btn--ghost btn--xs"
+                className={`thumb-legend__dot thumb-legend__dot--toggle ${
+                  allSelected ? 'thumb-legend__dot--active' : ''
+                }`}
                 onClick={handleToggleSelectAll}
                 disabled={photos.length === 0}
-              >
+                aria-label={allSelected ? '取消全选' : '全选'}
+                title={allSelected ? '取消全选' : '全选'}
+              />
+              <span className="thumb-legend__item">
                 {allSelected ? '取消全选' : '全选'}
-              </button>
+              </span>
             </div>
           </div>
 
