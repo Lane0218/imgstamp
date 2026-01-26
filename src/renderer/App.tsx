@@ -1230,6 +1230,30 @@ export function App() {
         <aside className="panel panel--right">
           <div className="panel__header">
             <div className="panel__title">属性编辑</div>
+            <div className="panel__actions">
+              <button
+                className="btn btn--ghost btn--icon"
+                onClick={handleSelectPrev}
+                disabled={!currentPhoto || !canGoPrev}
+                aria-label="上一张"
+                title="上一张"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+              <button
+                className="btn btn--ghost btn--icon"
+                onClick={handleSelectNext}
+                disabled={!currentPhoto || !canGoNext}
+                aria-label="下一张"
+                title="下一张"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </button>
+            </div>
           </div>
           <div className="meta">
             <div className="meta__title">{currentPhoto?.filename ?? '未选择图片'}</div>
@@ -1283,30 +1307,6 @@ export function App() {
           </div>
           <div className="form-actions">
             <div className="form-actions__row form-actions__row--top">
-              <div className="form-actions__nav">
-                <button
-                  className="btn btn--ghost btn--icon"
-                  onClick={handleSelectPrev}
-                  disabled={!currentPhoto || !canGoPrev}
-                  aria-label="上一张"
-                  title="上一张"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M15 18l-6-6 6-6" />
-                  </svg>
-                </button>
-                <button
-                  className="btn btn--ghost btn--icon"
-                  onClick={handleSelectNext}
-                  disabled={!currentPhoto || !canGoNext}
-                  aria-label="下一张"
-                  title="下一张"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 6l6 6-6 6" />
-                  </svg>
-                </button>
-              </div>
               <div className="form-actions__fields">
                 <button
                   className="btn btn--ghost"

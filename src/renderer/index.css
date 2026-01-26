@@ -648,7 +648,7 @@ select {
 }
 
 .form-actions__row--top {
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
 }
 
@@ -656,18 +656,11 @@ select {
   justify-content: center;
 }
 
-.form-actions__nav {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
 .form-actions__fields {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  flex: 1;
+  width: 100%;
 }
 
 .form-actions__fields .btn {
