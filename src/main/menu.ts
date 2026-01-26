@@ -44,10 +44,10 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
       label: '帮助',
       submenu: [
         {
-          label: '关于 ImgStamp',
+          label: '关于',
           click: () =>
             sendToRenderer(mainWindow, 'menu:about', {
-              title: '关于 ImgStamp',
+              title: '关于',
               subtitle: 'ImgStamp',
               lines: [
                 `版本 ${app.getVersion()}`,
