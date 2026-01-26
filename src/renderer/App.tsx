@@ -235,7 +235,7 @@ export function App() {
       selected: false,
       meta: {
         date: null,
-        location: '',
+        location: '湖南长沙',
         description: '',
         exifDate: null,
       },
@@ -323,7 +323,7 @@ export function App() {
               selected: saved?.selected ?? false,
               meta: saved?.meta ?? {
                 date: null,
-                location: '',
+                location: '湖南长沙',
                 description: '',
                 exifDate: null,
               },
