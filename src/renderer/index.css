@@ -838,6 +838,19 @@ select {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+  gap: 18px;
+}
+
+.modal__list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #5b544b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.modal__list li {
+  margin: 4px 0;
 }
 
 @media (max-width: 960px) {

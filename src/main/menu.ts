@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, dialog } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 
 function sendToRenderer(mainWindow: BrowserWindow | null, channel: string, payload?: unknown) {
   if (!mainWindow) {
@@ -17,13 +17,6 @@ export function setWindowTitle(mainWindow: BrowserWindow | null, projectName: st
 }
 
 export function buildAppMenu(mainWindow: BrowserWindow | null): void {
-  const showMessage = (options: Electron.MessageBoxOptions) => {
-    if (!mainWindow) {
-      return;
-    }
-    void dialog.showMessageBox(mainWindow, options);
-  };
-
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: '项目',
@@ -53,26 +46,26 @@ export function buildAppMenu(mainWindow: BrowserWindow | null): void {
         {
           label: '关于 ImgStamp',
           click: () =>
-            showMessage({
-              type: 'info',
+            sendToRenderer(mainWindow, 'menu:about', {
               title: '关于 ImgStamp',
-              message: 'ImgStamp',
-              detail: `版本 ${app.getVersion()}\n本地照片批量加白边与文字标注工具。`,
+              subtitle: 'ImgStamp',
+              lines: [`版本 ${app.getVersion()}`, '本地照片批量加白边与文字标注工具。'],
             }),
         },
         {
           label: '快捷键',
           click: () =>
-            showMessage({
-              type: 'info',
+            sendToRenderer(mainWindow, 'menu:shortcuts', {
               title: '快捷键',
-              message: '常用快捷键',
-              detail:
-                'Ctrl/Cmd + O：新建项目（打开文件夹）\n' +
-                'Ctrl/Cmd + Shift + O：打开项目\n' +
-                'Ctrl/Cmd + S：保存项目\n' +
-                '← / →：切换选中图片\n' +
+              subtitle: '常用快捷键',
+              lines: [
+                'Ctrl/Cmd + O：新建项目（打开文件夹）',
+                'Ctrl/Cmd + Shift + O：打开项目',
+                'Ctrl/Cmd + S：保存项目',
+                'Ctrl/Cmd + Enter：开始导出',
+                '← / →：切换选中图片',
                 'Space：标记/取消标记选中',
+              ],
             }),
         },
       ],

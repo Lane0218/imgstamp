@@ -64,6 +64,12 @@ type ImgStampApi = {
   onMenuSaveProject: (callback: () => void) => () => void;
   onMenuExport: (callback: () => void) => () => void;
   onMenuSetSize: (callback: (size: '5' | '5L' | '6' | '6L') => void) => () => void;
+  onMenuAbout: (
+    callback: (payload: { title: string; subtitle?: string; lines: string[] }) => void,
+  ) => () => void;
+  onMenuShortcuts: (
+    callback: (payload: { title: string; subtitle?: string; lines: string[] }) => void,
+  ) => () => void;
   onExportProgress: (
     callback: (payload: { current: number; total: number; filename: string }) => void,
   ) => () => void;

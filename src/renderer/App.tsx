@@ -44,6 +44,12 @@ type ExportDialogState = {
   note?: string;
 };
 
+type HelpDialogState = {
+  title: string;
+  subtitle?: string;
+  lines: string[];
+};
+
 const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -97,6 +103,7 @@ export function App() {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [exportDialog, setExportDialog] = useState<ExportDialogState | null>(null);
+  const [helpDialog, setHelpDialog] = useState<HelpDialogState | null>(null);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(
     null,
   );
@@ -449,6 +456,12 @@ export function App() {
     const unsubSaveProject = window.imgstamp.onMenuSaveProject(handleSaveProject);
     const unsubExport = window.imgstamp.onMenuExport(handleExport);
     const unsubSetSize = window.imgstamp.onMenuSetSize(handleExportSizeChange);
+    const unsubAbout = window.imgstamp.onMenuAbout((payload) => {
+      setHelpDialog(payload);
+    });
+    const unsubShortcuts = window.imgstamp.onMenuShortcuts((payload) => {
+      setHelpDialog(payload);
+    });
     const unsubLauncherCreate = window.imgstamp.onLauncherCreateProject(async (payload) => {
       if (!payload?.baseDir) {
         return;
@@ -482,6 +495,8 @@ export function App() {
       unsubSaveProject();
       unsubExport();
       unsubSetSize();
+      unsubAbout();
+      unsubShortcuts();
       unsubLauncherCreate();
       unsubLauncherOpen();
       unsubExportProgress();
@@ -1399,9 +1414,16 @@ export function App() {
             ) : null}
             {exportDialog.note ? <div className="modal__note">{exportDialog.note}</div> : null}
             <div className="modal__actions">
+              <button
+                className={exportDialog.outputDir ? 'btn btn--ghost' : 'btn btn--primary'}
+                onClick={() => setExportDialog(null)}
+              >
+                知道了
+              </button>
               {exportDialog.outputDir ? (
                 <button
-                  className="btn btn--ghost"
+                  className="btn btn--primary"
+                  autoFocus
                   onClick={async () => {
                     if (!window.imgstamp || !exportDialog.outputDir) {
                       return;
@@ -1417,7 +1439,29 @@ export function App() {
                   打开输出目录
                 </button>
               ) : null}
-              <button className="btn btn--primary" onClick={() => setExportDialog(null)}>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {helpDialog ? (
+        <div className="modal-backdrop" role="presentation">
+          <div
+            className="modal modal--help"
+            role="dialog"
+            aria-modal="true"
+            aria-label={helpDialog.title}
+          >
+            <div className="modal__title">{helpDialog.title}</div>
+            {helpDialog.subtitle ? (
+              <div className="modal__stats">{helpDialog.subtitle}</div>
+            ) : null}
+            <ul className="modal__list">
+              {helpDialog.lines.map((line, index) => (
+                <li key={`${line}-${index}`}>{line}</li>
+              ))}
+            </ul>
+            <div className="modal__actions">
+              <button className="btn btn--primary" onClick={() => setHelpDialog(null)} autoFocus>
                 知道了
               </button>
             </div>

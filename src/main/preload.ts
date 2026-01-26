@@ -75,6 +75,26 @@ const api = {
     ipcRenderer.on('menu:set-size', listener);
     return () => ipcRenderer.removeListener('menu:set-size', listener);
   },
+  onMenuAbout: (
+    callback: (payload: { title: string; subtitle?: string; lines: string[] }) => void,
+  ) => {
+    const listener = (
+      _event: unknown,
+      payload: { title: string; subtitle?: string; lines: string[] },
+    ) => callback(payload);
+    ipcRenderer.on('menu:about', listener);
+    return () => ipcRenderer.removeListener('menu:about', listener);
+  },
+  onMenuShortcuts: (
+    callback: (payload: { title: string; subtitle?: string; lines: string[] }) => void,
+  ) => {
+    const listener = (
+      _event: unknown,
+      payload: { title: string; subtitle?: string; lines: string[] },
+    ) => callback(payload);
+    ipcRenderer.on('menu:shortcuts', listener);
+    return () => ipcRenderer.removeListener('menu:shortcuts', listener);
+  },
   onLauncherCreateProject: (callback: (payload: { name: string; baseDir: string }) => void) => {
     const listener = (_event: unknown, payload: { name: string; baseDir: string }) =>
       callback(payload);
