@@ -132,6 +132,26 @@ select {
   transform: translateY(-1px);
 }
 
+.btn--icon {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn--icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: #2f3b44;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .btn--compact {
   height: 30px;
   min-height: 30px;
@@ -617,8 +637,28 @@ select {
   border-top: 1px solid var(--border);
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-direction: column;
   background: rgba(255, 248, 238, 0.6);
+}
+
+.form-actions__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-actions__row--top {
+  justify-content: space-between;
+}
+
+.form-actions__row--bottom {
+  flex-wrap: wrap;
+}
+
+.form-actions__nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .status-bar {

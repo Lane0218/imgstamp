@@ -674,6 +674,7 @@ export function App() {
     : -1;
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex >= 0 && currentIndex < photos.length - 1;
+  const canApplyToSelected = Boolean(currentPhoto && multiSelectedCount >= 2);
   const totalPages = Math.max(1, Math.ceil(photos.length / pageSize));
   const pageStart = pageIndex * pageSize;
   const visiblePhotos = photos.slice(pageStart, pageStart + pageSize);
@@ -1281,36 +1282,62 @@ export function App() {
             </label>
           </div>
           <div className="form-actions">
-            <button
-              className="btn btn--ghost"
-              onClick={handleSelectPrev}
-              disabled={!currentPhoto || !canGoPrev}
-            >
-              上一张
-            </button>
-            <button
-              className="btn btn--ghost"
-              onClick={handleSelectNext}
-              disabled={!currentPhoto || !canGoNext}
-            >
-              下一张
-            </button>
-            {multiSelectedCount >= 2 ? (
-              <>
-                <button className="btn btn--primary" onClick={handleApplyAllToSelected}>
-                  应用全部
+            <div className="form-actions__row form-actions__row--top">
+              <div className="form-actions__nav">
+                <button
+                  className="btn btn--ghost btn--icon"
+                  onClick={handleSelectPrev}
+                  disabled={!currentPhoto || !canGoPrev}
+                  aria-label="上一张"
+                  title="上一张"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M15 18l-6-6 6-6" />
+                  </svg>
                 </button>
-                <button className="btn btn--ghost" onClick={handleApplyDateToSelected}>
-                  应用日期
+                <button
+                  className="btn btn--ghost btn--icon"
+                  onClick={handleSelectNext}
+                  disabled={!currentPhoto || !canGoNext}
+                  aria-label="下一张"
+                  title="下一张"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
                 </button>
-                <button className="btn btn--ghost" onClick={handleApplyLocationToSelected}>
-                  应用地点
-                </button>
-                <button className="btn btn--ghost" onClick={handleApplyDescriptionToSelected}>
-                  应用描述
-                </button>
-              </>
-            ) : null}
+              </div>
+              <button
+                className="btn btn--primary"
+                onClick={handleApplyAllToSelected}
+                disabled={!canApplyToSelected}
+              >
+                应用全部
+              </button>
+            </div>
+            <div className="form-actions__row form-actions__row--bottom">
+              <button
+                className="btn btn--ghost"
+                onClick={handleApplyDateToSelected}
+                disabled={!canApplyToSelected}
+              >
+                应用日期
+              </button>
+              <button
+                className="btn btn--ghost"
+                onClick={handleApplyLocationToSelected}
+                disabled={!canApplyToSelected}
+              >
+                应用地点
+              </button>
+              <button
+                className="btn btn--ghost"
+                onClick={handleApplyDescriptionToSelected}
+                disabled={!canApplyToSelected}
+              >
+                应用描述
+              </button>
+            </div>
           </div>
         </aside>
         <div
