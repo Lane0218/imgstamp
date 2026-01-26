@@ -182,7 +182,7 @@ export function Launcher() {
               <div className="launcher-card__title">开始一个项目</div>
               <div className="launcher-actions">
                 <button
-                  className="btn btn--primary btn--hero btn--square"
+                  className="btn btn--primary btn--hero btn--wide"
                   onClick={() => setView('create')}
                 >
                   <span className="btn__icon" aria-hidden="true">
@@ -195,7 +195,7 @@ export function Launcher() {
                   <span className="btn__label">新建项目</span>
                 </button>
                 <button
-                  className="btn btn--primary btn--hero btn--square"
+                  className="btn btn--primary btn--primary-soft btn--hero btn--wide"
                   onClick={handleOpenProject}
                 >
                   <span className="btn__icon" aria-hidden="true">
