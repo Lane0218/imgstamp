@@ -1333,7 +1333,7 @@ export function App() {
             </div>
             <div className="form-actions__row form-actions__row--bottom">
               <button
-                className="btn btn--primary"
+                className="btn btn--primary btn--block"
                 onClick={handleApplyAllToSelected}
                 disabled={!canApplyToSelected}
               >

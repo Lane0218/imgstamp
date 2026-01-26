@@ -152,6 +152,10 @@ select {
   stroke-linejoin: round;
 }
 
+.btn--block {
+  width: 100%;
+}
+
 .btn--compact {
   height: 30px;
   min-height: 30px;
