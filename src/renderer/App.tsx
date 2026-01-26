@@ -682,6 +682,7 @@ export function App() {
   const incompleteCount = selectedPhotos.filter(
     (photo) => !photo.meta.date || !photo.meta.location || !photo.meta.description,
   ).length;
+  const allSelected = photos.length > 0 && selectedPhotos.length === photos.length;
   const canExport = Boolean(baseDir && selectedPhotos.length > 0 && incompleteCount === 0);
   const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
   const currentIndex = currentPhotoId
@@ -947,6 +948,14 @@ export function App() {
     );
   };
 
+  const handleToggleSelectAll = () => {
+    if (photos.length === 0) {
+      return;
+    }
+    const nextSelected = !allSelected;
+    setPhotos((prev) => prev.map((photo) => ({ ...photo, selected: nextSelected })));
+  };
+
   useEffect(() => {
     const isEditableTarget = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) {
@@ -1070,6 +1079,14 @@ export function App() {
                 <i className="thumb-legend__dot thumb-legend__dot--warn" aria-hidden="true" />
                 待完善
               </span>
+              <button
+                type="button"
+                className="btn btn--ghost btn--xs"
+                onClick={handleToggleSelectAll}
+                disabled={photos.length === 0}
+              >
+                {allSelected ? '取消全选' : '全选'}
+              </button>
             </div>
           </div>
 

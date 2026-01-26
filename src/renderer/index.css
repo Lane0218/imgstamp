@@ -167,6 +167,13 @@ select {
   width: 100%;
 }
 
+.btn--xs {
+  min-height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  border-radius: 999px;
+}
+
 .btn--hero {
   min-height: 58px;
   padding: 0 24px;
@@ -338,6 +345,7 @@ select {
   color: var(--muted);
   white-space: nowrap;
   font-family: var(--font-display);
+  flex-wrap: wrap;
 }
 
 .thumb-legend__item {
