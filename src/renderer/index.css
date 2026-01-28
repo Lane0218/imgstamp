@@ -171,6 +171,24 @@ select {
   transform: translateY(-1px);
 }
 
+.btn--ghost.btn--feedback-ok {
+  border-color: #3f9b62;
+  background: #e3f6ea;
+  color: #1f5b35;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px rgba(63, 155, 98, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
+  transform: none;
+}
+
+.btn--ghost.btn--feedback-warn {
+  border-color: #d08a4a;
+  background: #fff0de;
+  color: #8a4b22;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px rgba(208, 138, 74, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
+  transform: none;
+}
+
 .btn--icon {
   width: 34px;
   height: 34px;
