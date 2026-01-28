@@ -101,7 +101,7 @@ select {
     box-shadow 0.16s ease, transform 0.16s ease;
 }
 
-.btn:hover:not(:disabled):not(.btn--feedback-ok):not(.btn--feedback-warn) {
+.btn:hover:not(:disabled) {
   background: #fff5ea;
   border-color: #d8cabc;
   transform: translateY(-1px);
@@ -114,7 +114,7 @@ select {
   box-shadow: 0 8px 18px rgba(18, 127, 199, 0.28);
 }
 
-.btn--primary:hover:not(:disabled):not(.btn--feedback-ok):not(.btn--feedback-warn) {
+.btn--primary:hover:not(:disabled) {
   background: linear-gradient(180deg, #27b7f0 0%, #1e63ae 100%);
   border-color: #1e63ae;
 }
@@ -169,7 +169,7 @@ select {
   box-shadow: none;
 }
 
-.btn--ghost:hover:not(:disabled):not(.btn--feedback-ok):not(.btn--feedback-warn) {
+.btn--ghost:hover:not(:disabled) {
   background: rgba(255, 243, 229, 0.9);
   border-color: rgba(18, 127, 199, 0.35);
   transform: translateY(-1px);

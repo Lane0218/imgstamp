@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import './index.css';
 
 type PhotoMeta = {
@@ -1079,34 +1080,37 @@ export function App() {
 
   const applyMetaToSelected = (partial: Partial<PhotoMeta>) => {
     if (!currentPhoto || multiSelectedIds.length < 2) {
-      return { changedIds: [], targetCount: 0 };
+      return { changedIds: [], targetCount: 0, apply: null };
     }
     const diffKeys = (Object.keys(partial) as Array<keyof PhotoMeta>).filter(
       (key) => partial[key] !== undefined,
     );
+    const targetIds = new Set(multiSelectedIds);
     const changedIds = photos
-      .filter((photo) => multiSelectedSet.has(photo.id))
+      .filter((photo) => targetIds.has(photo.id))
       .filter((photo) => diffKeys.some((key) => photo.meta[key] !== partial[key]))
       .map((photo) => photo.id);
 
     if (changedIds.length === 0) {
-      return { changedIds, targetCount: multiSelectedIds.length };
+      return { changedIds, targetCount: multiSelectedIds.length, apply: null };
     }
 
-    setPhotos((prev) =>
-      prev.map((photo) =>
-        multiSelectedSet.has(photo.id)
-          ? {
-              ...photo,
-              meta: {
-                ...photo.meta,
-                ...partial,
-              },
-            }
-          : photo,
-      ),
-    );
-    return { changedIds, targetCount: multiSelectedIds.length };
+    const apply = () => {
+      setPhotos((prev) =>
+        prev.map((photo) =>
+          targetIds.has(photo.id)
+            ? {
+                ...photo,
+                meta: {
+                  ...photo.meta,
+                  ...partial,
+                },
+              }
+            : photo,
+        ),
+      );
+    };
+    return { changedIds, targetCount: multiSelectedIds.length, apply };
   };
 
   const showApplyFeedback = (
@@ -1117,18 +1121,19 @@ export function App() {
     if (result.targetCount === 0) {
       pushTransientMessage('请先多选图片');
       flashActionButton(action, 'warn', '请多选');
-      return;
+      return false;
     }
     if (result.changedIds.length === 0) {
       pushTransientMessage('已一致，无需应用');
       flashActionButton(action, 'warn', '无变更');
-      return;
+      return false;
     }
     const suffix =
       result.changedIds.length < result.targetCount ? '（其余已一致）' : '';
     pushTransientMessage(`已应用${label}到 ${result.changedIds.length} 张${suffix}`);
     flashActionButton(action, 'ok', '已应用');
     flashThumbnails(result.changedIds);
+    return true;
   };
 
   const handleToggleLocationSkipped = () => {
@@ -1158,7 +1163,13 @@ export function App() {
       return;
     }
     const result = applyMetaToSelected({ date: currentPhoto.meta.date });
-    showApplyFeedback('date', '日期', result);
+    let shouldApply = false;
+    flushSync(() => {
+      shouldApply = showApplyFeedback('date', '日期', result);
+    });
+    if (shouldApply && result.apply) {
+      window.requestAnimationFrame(() => result.apply?.());
+    }
   };
 
   const handleApplyLocationToSelected = () => {
@@ -1169,7 +1180,13 @@ export function App() {
       location: currentPhoto.meta.location,
       locationSkipped: currentPhoto.meta.locationSkipped,
     });
-    showApplyFeedback('location', '地点', result);
+    let shouldApply = false;
+    flushSync(() => {
+      shouldApply = showApplyFeedback('location', '地点', result);
+    });
+    if (shouldApply && result.apply) {
+      window.requestAnimationFrame(() => result.apply?.());
+    }
   };
 
   const handleApplyDescriptionToSelected = () => {
@@ -1180,7 +1197,13 @@ export function App() {
       description: currentPhoto.meta.description,
       descriptionSkipped: currentPhoto.meta.descriptionSkipped,
     });
-    showApplyFeedback('description', '描述', result);
+    let shouldApply = false;
+    flushSync(() => {
+      shouldApply = showApplyFeedback('description', '描述', result);
+    });
+    if (shouldApply && result.apply) {
+      window.requestAnimationFrame(() => result.apply?.());
+    }
   };
 
   const handleApplyAllToSelected = () => {
@@ -1194,7 +1217,13 @@ export function App() {
       description: currentPhoto.meta.description,
       descriptionSkipped: currentPhoto.meta.descriptionSkipped,
     });
-    showApplyFeedback('all', '全部信息', result);
+    let shouldApply = false;
+    flushSync(() => {
+      shouldApply = showApplyFeedback('all', '全部信息', result);
+    });
+    if (shouldApply && result.apply) {
+      window.requestAnimationFrame(() => result.apply?.());
+    }
   };
 
   const toggleCurrentSelected = () => {
