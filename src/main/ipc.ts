@@ -271,8 +271,18 @@ function isCjkCode(code: number): boolean {
     (code >= 0x3040 && code <= 0x30ff) ||
     (code >= 0xac00 && code <= 0xd7af) ||
     (code >= 0x3000 && code <= 0x303f) ||
-    code === 0xff08 ||
-    code === 0xff09
+    (code >= 0xff01 && code <= 0xff0f) ||
+    (code >= 0xff1a && code <= 0xff20) ||
+    (code >= 0xff3b && code <= 0xff40) ||
+    (code >= 0xff5b && code <= 0xff65) ||
+    code === 0x2013 ||
+    code === 0x2014 ||
+    code === 0x2018 ||
+    code === 0x2019 ||
+    code === 0x201c ||
+    code === 0x201d ||
+    code === 0x2026 ||
+    code === 0x00b7
   );
 }
 
