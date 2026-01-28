@@ -6,6 +6,8 @@ type PhotoMeta = {
   location: string;
   description: string;
   exifDate: string | null;
+  locationSkipped: boolean;
+  descriptionSkipped: boolean;
 };
 
 type PhotoItem = {
@@ -49,6 +51,26 @@ type HelpDialogState = {
   subtitle?: string;
   lines: string[];
 };
+
+const normalizeMeta = (meta?: Partial<PhotoMeta>): PhotoMeta => ({
+  date: meta?.date ?? null,
+  location: meta?.location ?? '湖南长沙',
+  description: meta?.description ?? '',
+  exifDate: meta?.exifDate ?? null,
+  locationSkipped: Boolean(meta?.locationSkipped),
+  descriptionSkipped: Boolean(meta?.descriptionSkipped),
+});
+
+const buildOutputMeta = (meta: PhotoMeta) => ({
+  date: meta.date,
+  location: meta.locationSkipped ? '' : meta.location,
+  description: meta.descriptionSkipped ? '' : meta.description,
+});
+
+const isMetaComplete = (meta: PhotoMeta) =>
+  Boolean(meta.date) &&
+  (meta.locationSkipped || Boolean(meta.location)) &&
+  (meta.descriptionSkipped || Boolean(meta.description));
 
 const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
   if (totalPages <= 7) {
@@ -172,9 +194,7 @@ export function App() {
       return;
     }
 
-    const readyItems = candidates.filter(
-      (photo) => photo.meta.date && photo.meta.location && photo.meta.description,
-    );
+    const readyItems = candidates.filter((photo) => isMetaComplete(photo.meta));
     if (readyItems.length !== candidates.length) {
       setStatusMessage('所选照片信息未完善');
       return;
@@ -196,11 +216,7 @@ export function App() {
         readyItems.map((photo) => ({
           relativePath: photo.relativePath,
           filename: photo.filename,
-          meta: {
-            date: photo.meta.date,
-            location: photo.meta.location,
-            description: photo.meta.description,
-          },
+          meta: buildOutputMeta(photo.meta),
         })),
         exportSize,
       );
@@ -270,12 +286,7 @@ export function App() {
     }): PhotoItem => ({
       ...item,
       selected: false,
-      meta: {
-        date: null,
-        location: '湖南长沙',
-        description: '',
-        exifDate: null,
-      },
+      meta: normalizeMeta(),
     });
 
     const recordRecent = async (entry: {
@@ -362,12 +373,7 @@ export function App() {
             return {
               ...item,
               selected: saved?.selected ?? false,
-              meta: saved?.meta ?? {
-                date: null,
-                location: '湖南长沙',
-                description: '',
-                exifDate: null,
-              },
+              meta: normalizeMeta(saved?.meta),
             };
           });
           const firstId = merged[0]?.id ?? null;
@@ -765,12 +771,12 @@ export function App() {
   }, [pageIndex, pageSize, photos, currentPhotoId]);
 
   const selectedPhotos = photos.filter((photo) => photo.selected);
-  const incompleteCount = selectedPhotos.filter(
-    (photo) => !photo.meta.date || !photo.meta.location || !photo.meta.description,
-  ).length;
+  const incompleteCount = selectedPhotos.filter((photo) => !isMetaComplete(photo.meta)).length;
   const allSelected = photos.length > 0 && selectedPhotos.length === photos.length;
   const canExport = Boolean(baseDir && selectedPhotos.length > 0 && incompleteCount === 0);
   const currentPhoto = photos.find((photo) => photo.id === currentPhotoId) ?? null;
+  const locationSkipped = Boolean(currentPhoto?.meta.locationSkipped);
+  const descriptionSkipped = Boolean(currentPhoto?.meta.descriptionSkipped);
   const currentIndex = currentPhotoId
     ? photos.findIndex((photo) => photo.id === currentPhotoId)
     : -1;
@@ -888,11 +894,7 @@ export function App() {
         const url = await window.imgstamp.getPreview(
           baseDir,
           currentPhoto.relativePath,
-          {
-            date: currentPhoto.meta.date,
-            location: currentPhoto.meta.location,
-            description: currentPhoto.meta.description,
-          },
+          buildOutputMeta(currentPhoto.meta),
           { size: exportSize, mode: previewMode },
         );
         if (!cancelled) {
@@ -913,6 +915,8 @@ export function App() {
     currentPhoto?.meta.date,
     currentPhoto?.meta.location,
     currentPhoto?.meta.description,
+    currentPhoto?.meta.locationSkipped,
+    currentPhoto?.meta.descriptionSkipped,
     exportSize,
     previewMode,
   ]);
@@ -972,7 +976,29 @@ export function App() {
     updateCurrentMeta({ date: currentPhoto.meta.exifDate });
   };
 
-  const applyMetaToSelected = (partial: Pick<PhotoMeta, 'date' | 'location' | 'description'>) => {
+  const handleToggleLocationSkipped = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    const next = !currentPhoto.meta.locationSkipped;
+    updateCurrentMeta({
+      locationSkipped: next,
+      location: next ? '' : currentPhoto.meta.location,
+    });
+  };
+
+  const handleToggleDescriptionSkipped = () => {
+    if (!currentPhoto) {
+      return;
+    }
+    const next = !currentPhoto.meta.descriptionSkipped;
+    updateCurrentMeta({
+      descriptionSkipped: next,
+      description: next ? '' : currentPhoto.meta.description,
+    });
+  };
+
+  const applyMetaToSelected = (partial: Partial<PhotoMeta>) => {
     if (!currentPhoto || multiSelectedIds.length < 2) {
       return;
     }
@@ -1002,14 +1028,20 @@ export function App() {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({ location: currentPhoto.meta.location });
+    applyMetaToSelected({
+      location: currentPhoto.meta.location,
+      locationSkipped: currentPhoto.meta.locationSkipped,
+    });
   };
 
   const handleApplyDescriptionToSelected = () => {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({ description: currentPhoto.meta.description });
+    applyMetaToSelected({
+      description: currentPhoto.meta.description,
+      descriptionSkipped: currentPhoto.meta.descriptionSkipped,
+    });
   };
 
   const handleApplyAllToSelected = () => {
@@ -1019,7 +1051,9 @@ export function App() {
     applyMetaToSelected({
       date: currentPhoto.meta.date,
       location: currentPhoto.meta.location,
+      locationSkipped: currentPhoto.meta.locationSkipped,
       description: currentPhoto.meta.description,
+      descriptionSkipped: currentPhoto.meta.descriptionSkipped,
     });
   };
 
@@ -1184,7 +1218,7 @@ export function App() {
             style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
           >
             {visiblePhotos.map((item, index) => {
-              const isComplete = Boolean(item.meta.date && item.meta.location && item.meta.description);
+              const isComplete = isMetaComplete(item.meta);
               const selectClass = item.selected
                 ? isComplete
                   ? 'thumb-select thumb-select--ok'
@@ -1406,23 +1440,54 @@ export function App() {
             </label>
             <label className="field">
               <span>拍摄地点</span>
-              <input
-                type="text"
-                placeholder="例如：上海市"
-                value={currentPhoto?.meta.location ?? ''}
-                onChange={(event) => updateCurrentMeta({ location: event.target.value })}
-                disabled={!currentPhoto}
-              />
+              <div className="field-row">
+                <input
+                  type="text"
+                  placeholder={locationSkipped ? '已标记为缺省' : '例如：上海市'}
+                  value={locationSkipped ? '' : currentPhoto?.meta.location ?? ''}
+                  onChange={(event) =>
+                    updateCurrentMeta({ location: event.target.value, locationSkipped: false })
+                  }
+                  disabled={!currentPhoto || locationSkipped}
+                />
+                <button
+                  type="button"
+                  className={`field-toggle ${locationSkipped ? 'field-toggle--active' : ''}`}
+                  aria-pressed={locationSkipped}
+                  onClick={handleToggleLocationSkipped}
+                  disabled={!currentPhoto}
+                  title={locationSkipped ? '已标记为缺省，点击取消' : '点击标记为缺省'}
+                >
+                  缺省
+                </button>
+              </div>
             </label>
             <label className="field">
               <span>描述</span>
-              <input
-                type="text"
-                placeholder="记录当下的心情或事件..."
-                value={currentPhoto?.meta.description ?? ''}
-                onChange={(event) => updateCurrentMeta({ description: event.target.value })}
-                disabled={!currentPhoto}
-              />
+              <div className="field-row">
+                <input
+                  type="text"
+                  placeholder={descriptionSkipped ? '已标记为缺省' : '记录当下的心情或事件...'}
+                  value={descriptionSkipped ? '' : currentPhoto?.meta.description ?? ''}
+                  onChange={(event) =>
+                    updateCurrentMeta({
+                      description: event.target.value,
+                      descriptionSkipped: false,
+                    })
+                  }
+                  disabled={!currentPhoto || descriptionSkipped}
+                />
+                <button
+                  type="button"
+                  className={`field-toggle ${descriptionSkipped ? 'field-toggle--active' : ''}`}
+                  aria-pressed={descriptionSkipped}
+                  onClick={handleToggleDescriptionSkipped}
+                  disabled={!currentPhoto}
+                  title={descriptionSkipped ? '已标记为缺省，点击取消' : '点击标记为缺省'}
+                >
+                  缺省
+                </button>
+              </div>
             </label>
           </div>
           <div className="form-actions">
