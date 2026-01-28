@@ -149,3 +149,6 @@ imgstamp/
   - `npm run build` 生成 `dist/main`、`dist/preload`、`dist/renderer`
 - **Windows 安装包**：
   - `npm run dist` 使用 electron-builder 生成 NSIS 安装器，输出在 `out/`
+- **发布到 GitHub Release**：
+  - Windows PowerShell 设置 `GH_TOKEN`（需 `repo` 权限）
+  - `npm run release` 自动构建并上传 Release
