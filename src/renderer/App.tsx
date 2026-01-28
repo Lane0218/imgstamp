@@ -88,34 +88,20 @@ const isMetaComplete = (meta: PhotoMeta) =>
   (meta.descriptionSkipped || Boolean(meta.description));
 
 const buildPageItems = (totalPages: number, currentIndex: number): PageItem[] => {
-  if (totalPages <= 7) {
+  if (totalPages <= 5) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
   }
 
   const currentPage = currentIndex + 1;
-  const pages = new Set<number>();
-  pages.add(1);
-  pages.add(2);
-  pages.add(totalPages);
-  pages.add(currentPage);
-  pages.add(currentPage - 1);
-  pages.add(currentPage + 1);
-
-  const sorted = Array.from(pages)
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b);
-
-  const result: PageItem[] = [];
-  for (let i = 0; i < sorted.length; i += 1) {
-    const page = sorted[i];
-    const prev = sorted[i - 1];
-    if (prev && page - prev > 1) {
-      result.push('ellipsis');
-    }
-    result.push(page);
+  if (currentPage <= 3) {
+    return [1, 2, 3, 'ellipsis', totalPages];
   }
 
-  return result;
+  if (currentPage >= totalPages - 2) {
+    return [1, 'ellipsis', totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, 'ellipsis', currentPage, 'ellipsis', totalPages];
 };
 
 const getNameFromPath = (filePath: string | null): string | null => {

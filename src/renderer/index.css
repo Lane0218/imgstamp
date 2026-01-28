@@ -880,19 +880,14 @@ select {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 100%;
+  flex-wrap: nowrap;
 }
 
 .pager__list {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 100%;
-  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .pager__item {
