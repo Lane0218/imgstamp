@@ -7,6 +7,7 @@ import { buildAppMenu, setWindowTitle } from './menu';
 let mainWindow: BrowserWindow | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let pendingLaunchPayload: LaunchPayload | null = null;
+const isDev = !app.isPackaged;
 
 type LaunchPayload =
   | { type: 'create'; name: string; baseDir: string; projectPath: string }
@@ -21,6 +22,22 @@ const loadRenderer = (window: BrowserWindow, view: 'main' | 'launcher') => {
   }
   const rendererIndex = path.join(__dirname, '../renderer/index.html');
   window.loadFile(rendererIndex, { query: { view } });
+};
+
+const bindDevToolsShortcut = (window: BrowserWindow) => {
+  if (!isDev) {
+    return;
+  }
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && !input.alt && !input.control && !input.meta && !input.shift) {
+      event.preventDefault();
+      if (window.webContents.isDevToolsOpened()) {
+        window.webContents.closeDevTools();
+      } else {
+        window.webContents.openDevTools({ mode: 'detach' });
+      }
+    }
+  });
 };
 
 const getWindowIcon = () => {
@@ -56,6 +73,7 @@ const createMainWindow = () => {
   });
 
   loadRenderer(window, 'main');
+  bindDevToolsShortcut(window);
   window.on('closed', () => {
     mainWindow = null;
   });
@@ -78,6 +96,7 @@ const createLauncherWindow = () => {
   });
 
   loadRenderer(window, 'launcher');
+  bindDevToolsShortcut(window);
   window.setMenu(null);
   window.on('closed', () => {
     launcherWindow = null;
