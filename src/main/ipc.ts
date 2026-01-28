@@ -270,7 +270,9 @@ function isCjkCode(code: number): boolean {
     (code >= 0x3400 && code <= 0x4dbf) ||
     (code >= 0x3040 && code <= 0x30ff) ||
     (code >= 0xac00 && code <= 0xd7af) ||
-    (code >= 0x3000 && code <= 0x303f)
+    (code >= 0x3000 && code <= 0x303f) ||
+    code === 0xff08 ||
+    code === 0xff09
   );
 }
 
