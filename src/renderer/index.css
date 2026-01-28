@@ -121,17 +121,19 @@ select {
 
 .btn--feedback-ok {
   border-color: #3f9b62;
-  background: #e3f6ea;
+  background: #d6f2e0;
   color: #1f5b35;
   white-space: nowrap;
+  transition: none;
   box-shadow: 0 0 0 2px rgba(63, 155, 98, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
 }
 
 .btn--feedback-warn {
   border-color: #d08a4a;
-  background: #fff0de;
+  background: #ffe8d0;
   color: #8a4b22;
   white-space: nowrap;
+  transition: none;
   box-shadow: 0 0 0 2px rgba(208, 138, 74, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
 }
 
@@ -172,20 +174,22 @@ select {
 }
 
 .btn--ghost.btn--feedback-ok {
-  border-color: #3f9b62;
-  background: #e3f6ea;
-  color: #1f5b35;
+  border-color: #2f8f56;
+  background: #c5ebd3;
+  color: #114a2d;
   white-space: nowrap;
-  box-shadow: 0 0 0 2px rgba(63, 155, 98, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
+  transition: none;
+  box-shadow: 0 0 0 2px rgba(47, 143, 86, 0.24), 0 10px 18px rgba(31, 42, 51, 0.12);
   transform: none;
 }
 
 .btn--ghost.btn--feedback-warn {
-  border-color: #d08a4a;
-  background: #fff0de;
-  color: #8a4b22;
+  border-color: #c97a33;
+  background: #ffdcbf;
+  color: #6f3a17;
   white-space: nowrap;
-  box-shadow: 0 0 0 2px rgba(208, 138, 74, 0.22), 0 8px 16px rgba(31, 42, 51, 0.08);
+  transition: none;
+  box-shadow: 0 0 0 2px rgba(201, 122, 51, 0.24), 0 10px 18px rgba(31, 42, 51, 0.12);
   transform: none;
 }
 
