@@ -68,12 +68,11 @@ ImgStamp 是一款个人离线照片整理工具，用于批量添加白边与�
 
 ## 开发与构建
 
-开发调试：
+本地编译运行（无热更新）：
 
 ```bash
 npm install
-npm run dev:renderer
-npm run start
+npm run run
 ```
 
 构建与打包：
@@ -86,6 +85,7 @@ npm run dist
 发布到 GitHub Release：
 
 ```bash
+$env:GH_TOKEN="你的token"
 npm run release
 ```
 
