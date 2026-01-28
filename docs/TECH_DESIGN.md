@@ -142,9 +142,9 @@ imgstamp/
 
 ## 6. 构建与打包流程
 
-- **本地开发**：
-  - `npm run dev:renderer` 启动渲染进程开发服务器
-  - `npm run start` 启动 Electron（会读取 `VITE_DEV_SERVER_URL`）
+- **本地编译运行（无热更新）**：
+  - `npm run run`：编译并启动 Electron
+  - 或分步执行：`npm run build` + `npm run start`
 - **生产构建**：
   - `npm run build` 生成 `dist/main`、`dist/preload`、`dist/renderer`
 - **Windows 安装包**：
