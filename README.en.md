@@ -1,12 +1,37 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="120" alt="ImgStamp Logo" />
+  <img src="src/renderer/assets/logo.png" width="250" alt="ImgStamp Logo" />
+</p>
+
+<h1 align="center">ImgStamp</h1>
+
+<p align="center">
+  Offline photo organizer with batch borders and text annotations
 </p>
 
 <p align="center">
   <a href="https://github.com/Lane0218/imgstamp/blob/main/README.md">简体中文</a> | English
 </p>
 
-# ImgStamp
+<p align="center">
+  <a href="https://github.com/Lane0218/imgstamp/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/Lane0218/imgstamp?style=flat" alt="license">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/stargazers">
+    <img src="https://img.shields.io/github/stars/Lane0218/imgstamp?style=flat" alt="stars">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/releases">
+    <img src="https://img.shields.io/github/downloads/Lane0218/imgstamp/total?style=flat" alt="downloads">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/releases">
+    <img src="https://img.shields.io/github/v/release/Lane0218/imgstamp?style=flat" alt="release">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp">
+    <img src="https://img.shields.io/github/repo-size/Lane0218/imgstamp?style=flat" alt="repo size">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/commits/main">
+    <img src="https://img.shields.io/github/last-commit/Lane0218/imgstamp?style=flat" alt="last commit">
+  </a>
+</p>
 
 ImgStamp is an offline desktop tool for organizing personal photos. It adds a clean white border and text annotations (date / location / description) in batch, then exports a consistent, print‑ready style. It is ideal for yearly photo curation and selecting highlights from large collections.
 

@@ -1,12 +1,37 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="120" alt="ImgStamp Logo" />
+  <img src="src/renderer/assets/logo.png" width="250" alt="ImgStamp Logo" />
+</p>
+
+<h1 align="center">ImgStamp</h1>
+
+<p align="center">
+  个人离线照片整理工具，批量加白边与文字标注并导出成品图
 </p>
 
 <p align="center">
   简体中文 | <a href="https://github.com/Lane0218/imgstamp/blob/main/README.en.md">English</a>
 </p>
 
-# ImgStamp
+<p align="center">
+  <a href="https://github.com/Lane0218/imgstamp/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/Lane0218/imgstamp?style=flat" alt="license">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/stargazers">
+    <img src="https://img.shields.io/github/stars/Lane0218/imgstamp?style=flat" alt="stars">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/releases">
+    <img src="https://img.shields.io/github/downloads/Lane0218/imgstamp/total?style=flat" alt="downloads">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/releases">
+    <img src="https://img.shields.io/github/v/release/Lane0218/imgstamp?style=flat" alt="release">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp">
+    <img src="https://img.shields.io/github/repo-size/Lane0218/imgstamp?style=flat" alt="repo size">
+  </a>
+  <a href="https://github.com/Lane0218/imgstamp/commits/main">
+    <img src="https://img.shields.io/github/last-commit/Lane0218/imgstamp?style=flat" alt="last commit">
+  </a>
+</p>
 
 ImgStamp 是一款个人离线照片整理工具，用于批量添加白边与文字标注（日期 / 地点 / 描述），并导出风格统一的成品图。适合每年集中整理相册、从大量照片中筛选精华并进行统一排版。
 
