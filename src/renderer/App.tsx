@@ -63,7 +63,7 @@ const ACTION_LABELS: Record<ActionKey, string> = {
   all: '应用全部',
 };
 
-const ACTION_FEEDBACK_DURATION = 800;
+const ACTION_FEEDBACK_DURATION = 2000;
 const STATUS_FEEDBACK_DURATION = 2600;
 const THUMB_FLASH_DURATION = 520;
 
