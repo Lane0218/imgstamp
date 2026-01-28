@@ -1,10 +1,24 @@
+const { AutoUnpackNativesPlugin } = require('@electron-forge/plugin-auto-unpack-natives');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+
+const keepNodeModules = [
+  '/node_modules/sharp',
+  '/node_modules/@img',
+  '/node_modules/detect-libc',
+  '/node_modules/semver',
+];
 
 module.exports = {
   packagerConfig: {
     asar: true,
     icon: 'assets/icon',
+    ignore: (file) => {
+      if (!file) return false;
+      if (file.startsWith('/.vite')) return false;
+      if (keepNodeModules.some((prefix) => file.startsWith(prefix))) return false;
+      return true;
+    },
   },
   rebuildConfig: {},
   publishers: [
@@ -64,6 +78,7 @@ module.exports = {
         ],
       },
     },
+    new AutoUnpackNativesPlugin(),
     // Fuses are used to enable/disable various Electron functionality
     // at package time, before code signing the application
     new FusesPlugin({
