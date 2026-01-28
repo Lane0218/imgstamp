@@ -645,6 +645,14 @@ async function getThumbnailPath(
   return { sourcePath, thumbPath };
 }
 
+async function writeFileAtomic(filePath: string, data: Buffer): Promise<void> {
+  const dir = path.dirname(filePath);
+  const tempPath = path.join(dir, `${path.basename(filePath)}.tmp`);
+  await fs.writeFile(tempPath, data);
+  await fs.rm(filePath, { force: true });
+  await fs.rename(tempPath, filePath);
+}
+
 async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
   const dir = path.dirname(filePath);
   const tempPath = path.join(dir, `${path.basename(filePath)}.tmp`);
@@ -779,7 +787,13 @@ export function registerIpcHandlers(): void {
 
       try {
         const cached = await fs.readFile(thumbPath);
-        return `data:${outputMime};base64,${cached.toString('base64')}`;
+        try {
+          await sharp(cached).metadata();
+          return `data:${outputMime};base64,${cached.toString('base64')}`;
+        } catch (error) {
+          console.warn('缩略图缓存损坏，尝试重建', thumbPath, error);
+          await fs.rm(thumbPath, { force: true });
+        }
       } catch {
         // ignore
       }
@@ -789,7 +803,7 @@ export function registerIpcHandlers(): void {
           .resize(safeSize, safeSize, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 80 })
           .toBuffer();
-        await fs.writeFile(thumbPath, buffer);
+        await writeFileAtomic(thumbPath, buffer);
         return `data:${outputMime};base64,${buffer.toString('base64')}`;
       } catch (error) {
         console.error(error);
