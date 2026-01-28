@@ -61,6 +61,16 @@ const createMainWindow = () => {
   });
 
   loadRenderer(window, 'main');
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && !input.alt && !input.control && !input.meta && !input.shift) {
+      event.preventDefault();
+      if (window.webContents.isDevToolsOpened()) {
+        window.webContents.closeDevTools();
+      } else {
+        window.webContents.openDevTools({ mode: 'detach' });
+      }
+    }
+  });
   window.on('closed', () => {
     mainWindow = null;
   });
@@ -83,6 +93,16 @@ const createLauncherWindow = () => {
   });
 
   loadRenderer(window, 'launcher');
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && !input.alt && !input.control && !input.meta && !input.shift) {
+      event.preventDefault();
+      if (window.webContents.isDevToolsOpened()) {
+        window.webContents.closeDevTools();
+      } else {
+        window.webContents.openDevTools({ mode: 'detach' });
+      }
+    }
+  });
   window.setMenu(null);
   window.on('closed', () => {
     launcherWindow = null;
