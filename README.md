@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="250" alt="ImgStamp Logo" />
+  <img src="src/renderer/assets/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
-<h1 align="center">ImgStamp</h1>
+<hr />
 
 <p align="center">
   个人离线照片整理工具，批量加白边与文字标注并导出成品图

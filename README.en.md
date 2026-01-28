@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="250" alt="ImgStamp Logo" />
+  <img src="src/renderer/assets/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
-<h1 align="center">ImgStamp</h1>
+<hr />
 
 <p align="center">
   Offline photo organizer with batch borders and text annotations
