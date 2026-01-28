@@ -1132,7 +1132,6 @@ export function App() {
       result.changedIds.length < result.targetCount ? '（其余已一致）' : '';
     pushTransientMessage(`已应用${label}到 ${result.changedIds.length} 张${suffix}`);
     flashActionButton(action, 'ok', '已应用');
-    flashThumbnails(result.changedIds);
     return true;
   };
 
@@ -1168,7 +1167,10 @@ export function App() {
       shouldApply = showApplyFeedback('date', '日期', result);
     });
     if (shouldApply && result.apply) {
-      window.requestAnimationFrame(() => result.apply?.());
+      window.setTimeout(() => {
+        result.apply?.();
+        flashThumbnails(result.changedIds);
+      }, 0);
     }
   };
 
@@ -1185,7 +1187,10 @@ export function App() {
       shouldApply = showApplyFeedback('location', '地点', result);
     });
     if (shouldApply && result.apply) {
-      window.requestAnimationFrame(() => result.apply?.());
+      window.setTimeout(() => {
+        result.apply?.();
+        flashThumbnails(result.changedIds);
+      }, 0);
     }
   };
 
@@ -1202,7 +1207,10 @@ export function App() {
       shouldApply = showApplyFeedback('description', '描述', result);
     });
     if (shouldApply && result.apply) {
-      window.requestAnimationFrame(() => result.apply?.());
+      window.setTimeout(() => {
+        result.apply?.();
+        flashThumbnails(result.changedIds);
+      }, 0);
     }
   };
 
@@ -1222,7 +1230,10 @@ export function App() {
       shouldApply = showApplyFeedback('all', '全部信息', result);
     });
     if (shouldApply && result.apply) {
-      window.requestAnimationFrame(() => result.apply?.());
+      window.setTimeout(() => {
+        result.apply?.();
+        flashThumbnails(result.changedIds);
+      }, 0);
     }
   };
 
