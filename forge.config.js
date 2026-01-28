@@ -2,12 +2,7 @@ const { AutoUnpackNativesPlugin } = require('@electron-forge/plugin-auto-unpack-
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
-const keepNodeModules = [
-  '/node_modules/sharp',
-  '/node_modules/@img',
-  '/node_modules/detect-libc',
-  '/node_modules/semver',
-];
+const keepPrefixes = ['/.vite', '/node_modules'];
 
 module.exports = {
   packagerConfig: {
@@ -15,8 +10,13 @@ module.exports = {
     icon: 'assets/icon',
     ignore: (file) => {
       if (!file) return false;
-      if (file.startsWith('/.vite')) return false;
-      if (keepNodeModules.some((prefix) => file.startsWith(prefix))) return false;
+      const normalized = file.replace(/\\/g, '/');
+      const withLeadingSlash = normalized.startsWith('/')
+        ? normalized
+        : `/${normalized}`;
+      if (keepPrefixes.some((prefix) => withLeadingSlash.startsWith(prefix))) {
+        return false;
+      }
       return true;
     },
   },
