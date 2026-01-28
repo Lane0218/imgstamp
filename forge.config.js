@@ -20,7 +20,16 @@ module.exports = {
       const withLeadingSlash = normalized.startsWith('/')
         ? normalized
         : `/${normalized}`;
+      // Keep exact paths and their children
       if (keepPrefixes.some((prefix) => withLeadingSlash.startsWith(prefix))) {
+        return false;
+      }
+      // Keep parent directories so fs-extra can traverse into whitelisted modules
+      if (
+        keepPrefixes.some((prefix) =>
+          prefix.startsWith(`${withLeadingSlash}/`),
+        )
+      ) {
         return false;
       }
       return true;
