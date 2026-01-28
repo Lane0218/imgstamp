@@ -3,13 +3,16 @@
   "productName": "ImgStamp",
   "version": "1.0.0",
   "description": "个人离线照片整理工具，批量加白边与文字标注并导出成品图",
-  "main": ".vite/build/main.js",
+  "main": "dist/main/main.js",
   "private": true,
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "start": "electron .",
+    "dev:renderer": "vite --config vite.renderer.config.mjs",
+    "build:main": "vite build --config vite.main.config.mjs",
+    "build:preload": "vite build --config vite.preload.config.mjs",
+    "build:renderer": "vite build --config vite.renderer.config.mjs",
+    "build": "npm run build:main && npm run build:preload && npm run build:renderer",
+    "dist": "npm run build && electron-builder --win nsis",
     "lint": "echo \"No linting configured\""
   },
   "keywords": [],
@@ -34,6 +37,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
     "electron": "40.0.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
   },
@@ -43,5 +47,34 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sharp": "^0.34.5"
+  },
+  "build": {
+    "appId": "com.imgstamp.app",
+    "productName": "ImgStamp",
+    "directories": {
+      "output": "out"
+    },
+    "files": [
+      "dist/**",
+      "assets/**",
+      "package.json",
+      "node_modules/**"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.dll"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ImgStamp"
+    }
   }
 }

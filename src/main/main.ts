@@ -18,13 +18,14 @@ type LaunchPayload =
   | { type: 'open-project'; projectPath: string };
 
 const loadRenderer = (window: BrowserWindow, view: 'main' | 'launcher') => {
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    window.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}?view=${view}`);
-  } else {
-    window.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
-      query: { view },
-    });
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL;
+  if (devServerUrl) {
+    const base = devServerUrl.endsWith('/') ? devServerUrl : `${devServerUrl}/`;
+    window.loadURL(`${base}?view=${view}`);
+    return;
   }
+  const rendererIndex = path.join(__dirname, '../renderer/index.html');
+  window.loadFile(rendererIndex, { query: { view } });
 };
 
 const getWindowIcon = () => {
@@ -53,7 +54,7 @@ const createMainWindow = () => {
     minHeight: 720,
     icon: getWindowIcon(),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -75,7 +76,7 @@ const createLauncherWindow = () => {
     title: 'ImgStamp',
     icon: getWindowIcon(),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
