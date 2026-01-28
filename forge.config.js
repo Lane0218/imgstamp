@@ -12,7 +12,9 @@ const keepPrefixes = [
 
 module.exports = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: '**/*.dll',
+    },
     icon: 'assets/icon',
     ignore: (file) => {
       if (!file) return false;
