@@ -210,6 +210,14 @@ export function App() {
     }, duration);
   };
 
+  const forceRepaint = () => {
+    const root = document.getElementById('root');
+    if (!root) {
+      return;
+    }
+    void root.offsetHeight;
+  };
+
   const flashActionButton = (key: ActionKey, tone: ActionTone, label: string) => {
     setActionFeedback((prev) => ({ ...prev, [key]: { label, tone } }));
     const timers = actionTimersRef.current;
@@ -1166,6 +1174,7 @@ export function App() {
     flushSync(() => {
       shouldApply = showApplyFeedback('date', '日期', result);
     });
+    forceRepaint();
     if (shouldApply && result.apply) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
@@ -1188,6 +1197,7 @@ export function App() {
     flushSync(() => {
       shouldApply = showApplyFeedback('location', '地点', result);
     });
+    forceRepaint();
     if (shouldApply && result.apply) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
@@ -1210,6 +1220,7 @@ export function App() {
     flushSync(() => {
       shouldApply = showApplyFeedback('description', '描述', result);
     });
+    forceRepaint();
     if (shouldApply && result.apply) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
@@ -1235,6 +1246,7 @@ export function App() {
     flushSync(() => {
       shouldApply = showApplyFeedback('all', '全部信息', result);
     });
+    forceRepaint();
     if (shouldApply && result.apply) {
       window.requestAnimationFrame(() => {
         window.requestAnimationFrame(() => {
