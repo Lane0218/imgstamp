@@ -126,6 +126,9 @@ select {
   white-space: nowrap;
   transition: none;
   box-shadow: 0 0 0 2px rgba(47, 143, 86, 0.24), 0 10px 18px rgba(31, 42, 51, 0.12);
+  transform: translateZ(0);
+  will-change: background-color, transform;
+  animation: feedback-repaint 1ms linear;
 }
 
 .btn--feedback-warn {
@@ -135,6 +138,9 @@ select {
   white-space: nowrap;
   transition: none;
   box-shadow: 0 0 0 2px rgba(201, 122, 51, 0.24), 0 10px 18px rgba(31, 42, 51, 0.12);
+  transform: translateZ(0);
+  will-change: background-color, transform;
+  animation: feedback-repaint 1ms linear;
 }
 
 .btn--primary.btn--feedback-ok {
@@ -182,7 +188,7 @@ select {
   white-space: nowrap;
   transition: none;
   box-shadow: 0 0 0 2px rgba(47, 143, 86, 0.26), 0 12px 20px rgba(31, 42, 51, 0.14);
-  transform: none;
+  transform: translateZ(0);
 }
 
 .btn--ghost.btn--feedback-warn {
@@ -192,7 +198,7 @@ select {
   white-space: nowrap;
   transition: none;
   box-shadow: 0 0 0 2px rgba(201, 122, 51, 0.26), 0 12px 20px rgba(31, 42, 51, 0.14);
-  transform: none;
+  transform: translateZ(0);
 }
 
 .btn--icon {
@@ -517,6 +523,15 @@ select {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(224, 122, 52, 0);
+  }
+}
+
+@keyframes feedback-repaint {
+  from {
+    opacity: 0.99;
+  }
+  to {
+    opacity: 1;
   }
 }
 
