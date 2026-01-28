@@ -55,7 +55,9 @@
       "meta": {
         "date": "2023-01-20 10:00:00", // 本地时间字符串（不做时区转换）
         "location": "上海",
-        "description": "春节聚餐"
+        "description": "春节聚餐",
+        "locationSkipped": false,
+        "descriptionSkipped": false
       }
     }
   ]
@@ -87,6 +89,7 @@
     - 将原图 composite 到画布中央。
     - 使用 SVG 模板生成文字层（包含日期、地点、描述；描述仅单行）。
       - 字体规则：中文使用仿宋（`FangSong` / `FangSong_GB2312` / `仿宋`），英文/数字使用 `Times New Roman`，均为系统字体；若缺失则分别回退到常见系统字体。
+      - 若 `locationSkipped` / `descriptionSkipped` 为 `true`，对应文字输出为空字符串（不显示）。
     - 底部文字左右对齐基准为 **照片内容边界**，非画布白边；文字贴近照片一侧，额外空白放在远离照片一侧。
     - 右侧文字模式下：
         - 文字整体逆时针旋转 90° 竖排。
@@ -124,6 +127,15 @@ imgstamp/
 - **问题**: Sharp 原生绘图 API 较弱，难以处理复杂的文字排版。
 - **对策**: 使用 SVG 编写文字布局（单行描述，无需自动换行），然后 `Buffer.from(svgString)` 作为一个图层叠加到图片上。
   - 需要“贴近内容边界”时，可对缩放后的图像做轻量内容边界检测（例如亮度阈值扫描），失败则回退到图片外框边缘。
+
+## 5. 字段缺省规则
+- **目的**：允许地点/描述被明确标记为“缺省”，避免被当作“未填写”。
+- **字段**：`locationSkipped` / `descriptionSkipped`（默认 `false`）。
+- **完成判定**：
+  - 日期必须存在。
+  - 地点：有值 **或** `locationSkipped === true`。
+  - 描述：有值 **或** `descriptionSkipped === true`。
+- **导出/预览**：被标记缺省的字段按空字符串处理。
 
 ### 4.3 HEIC 格式支持
 - **说明**: 当前版本不支持 HEIC，仅支持 JPG/PNG。
