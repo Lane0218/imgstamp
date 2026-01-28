@@ -52,6 +52,21 @@ type HelpDialogState = {
   lines: string[];
 };
 
+type ActionKey = 'date' | 'location' | 'description' | 'all';
+type ActionTone = 'ok' | 'warn';
+type ActionFeedback = { label: string; tone: ActionTone };
+
+const ACTION_LABELS: Record<ActionKey, string> = {
+  date: '应用日期',
+  location: '应用地点',
+  description: '应用描述',
+  all: '应用全部',
+};
+
+const ACTION_FEEDBACK_DURATION = 800;
+const STATUS_FEEDBACK_DURATION = 2600;
+const THUMB_FLASH_DURATION = 520;
+
 const normalizeMeta = (meta?: Partial<PhotoMeta>): PhotoMeta => ({
   date: meta?.date ?? null,
   location: meta?.location ?? '湖南长沙',
@@ -128,6 +143,7 @@ export function App() {
   const MIN_CENTER_WIDTH = 520;
   const MIN_RIGHT_WIDTH = 320;
   const [statusMessage, setStatusMessage] = useState('就绪');
+  const [transientMessage, setTransientMessage] = useState<string | null>(null);
   const [projectPath, setProjectPath] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('未命名项目');
   const [baseDir, setBaseDir] = useState<string | null>(null);
@@ -148,6 +164,13 @@ export function App() {
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
   const [columnSizes, setColumnSizes] = useState({ left: MIN_LEFT_WIDTH, right: MIN_RIGHT_WIDTH });
+  const [actionFeedback, setActionFeedback] = useState<Record<ActionKey, ActionFeedback | null>>({
+    date: null,
+    location: null,
+    description: null,
+    all: null,
+  });
+  const [flashIds, setFlashIds] = useState<Set<string>>(new Set());
   const dirtyRef = useRef(false);
   const suppressDirtyRef = useRef(false);
   const autoSavingRef = useRef(false);
@@ -156,6 +179,9 @@ export function App() {
     exportSize: '5' | '5L' | '6' | '6L';
     photos: PhotoItem[];
   }>({ baseDir: null, exportSize: '5L', photos: [] });
+  const actionTimersRef = useRef<Partial<Record<ActionKey, number>>>({});
+  const transientTimerRef = useRef<number | null>(null);
+  const flashTimersRef = useRef<Map<string, { token: number; timeoutId: number }>>(new Map());
   const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sizesInitialized = useRef(false);
@@ -170,11 +196,86 @@ export function App() {
   const launchHandledRef = useRef(false);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
+  const statusText = transientMessage ?? (apiAvailable ? statusMessage : '预加载未就绪');
+
+  const pushTransientMessage = (message: string, duration = STATUS_FEEDBACK_DURATION) => {
+    setTransientMessage(message);
+    if (transientTimerRef.current) {
+      window.clearTimeout(transientTimerRef.current);
+    }
+    transientTimerRef.current = window.setTimeout(() => {
+      setTransientMessage(null);
+      transientTimerRef.current = null;
+    }, duration);
+  };
+
+  const flashActionButton = (key: ActionKey, tone: ActionTone, label: string) => {
+    setActionFeedback((prev) => ({ ...prev, [key]: { label, tone } }));
+    const timers = actionTimersRef.current;
+    if (timers[key]) {
+      window.clearTimeout(timers[key]);
+    }
+    timers[key] = window.setTimeout(() => {
+      setActionFeedback((prev) => ({ ...prev, [key]: null }));
+      timers[key] = undefined;
+    }, ACTION_FEEDBACK_DURATION);
+  };
+
+  const flashThumbnails = (ids: string[]) => {
+    if (ids.length === 0) {
+      return;
+    }
+    setFlashIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+    ids.forEach((id) => {
+      const token = Date.now() + Math.random();
+      const timeoutId = window.setTimeout(() => {
+        const current = flashTimersRef.current.get(id);
+        if (!current || current.token !== token) {
+          return;
+        }
+        flashTimersRef.current.delete(id);
+        setFlashIds((prev) => {
+          if (!prev.has(id)) {
+            return prev;
+          }
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, THUMB_FLASH_DURATION);
+      flashTimersRef.current.set(id, { token, timeoutId });
+    });
+  };
+
+  const getActionLabel = (key: ActionKey) => actionFeedback[key]?.label ?? ACTION_LABELS[key];
+  const getActionClass = (key: ActionKey) =>
+    actionFeedback[key]?.tone ? `btn--feedback-${actionFeedback[key]?.tone}` : '';
   const handleExportSizeChange = (size: '5' | '5L' | '6' | '6L') => {
     setExportSize(size);
     const label = EXPORT_SIZE_META[size]?.label ?? size;
     setStatusMessage(`已切换导出尺寸: ${label}`);
   };
+
+  useEffect(() => {
+    return () => {
+      if (transientTimerRef.current) {
+        window.clearTimeout(transientTimerRef.current);
+      }
+      Object.values(actionTimersRef.current).forEach((timerId) => {
+        if (timerId) {
+          window.clearTimeout(timerId);
+        }
+      });
+      flashTimersRef.current.forEach((entry) => {
+        window.clearTimeout(entry.timeoutId);
+      });
+      flashTimersRef.current.clear();
+    };
+  }, []);
 
   const handleExport = async () => {
     if (!window.imgstamp) {
@@ -976,6 +1077,60 @@ export function App() {
     updateCurrentMeta({ date: currentPhoto.meta.exifDate });
   };
 
+  const applyMetaToSelected = (partial: Partial<PhotoMeta>) => {
+    if (!currentPhoto || multiSelectedIds.length < 2) {
+      return { changedIds: [], targetCount: 0 };
+    }
+    const diffKeys = (Object.keys(partial) as Array<keyof PhotoMeta>).filter(
+      (key) => partial[key] !== undefined,
+    );
+    const changedIds = photos
+      .filter((photo) => multiSelectedSet.has(photo.id))
+      .filter((photo) => diffKeys.some((key) => photo.meta[key] !== partial[key]))
+      .map((photo) => photo.id);
+
+    if (changedIds.length === 0) {
+      return { changedIds, targetCount: multiSelectedIds.length };
+    }
+
+    setPhotos((prev) =>
+      prev.map((photo) =>
+        multiSelectedSet.has(photo.id)
+          ? {
+              ...photo,
+              meta: {
+                ...photo.meta,
+                ...partial,
+              },
+            }
+          : photo,
+      ),
+    );
+    return { changedIds, targetCount: multiSelectedIds.length };
+  };
+
+  const showApplyFeedback = (
+    action: ActionKey,
+    label: string,
+    result: { changedIds: string[]; targetCount: number },
+  ) => {
+    if (result.targetCount === 0) {
+      pushTransientMessage('请先多选图片');
+      flashActionButton(action, 'warn', '请先多选');
+      return;
+    }
+    if (result.changedIds.length === 0) {
+      pushTransientMessage('已一致，无需应用');
+      flashActionButton(action, 'warn', '未产生变更');
+      return;
+    }
+    const suffix =
+      result.changedIds.length < result.targetCount ? '（其余已一致）' : '';
+    pushTransientMessage(`已应用${label}到 ${result.changedIds.length} 张${suffix}`);
+    flashActionButton(action, 'ok', '已应用 ✓');
+    flashThumbnails(result.changedIds);
+  };
+
   const handleToggleLocationSkipped = () => {
     if (!currentPhoto) {
       return;
@@ -998,63 +1153,48 @@ export function App() {
     });
   };
 
-  const applyMetaToSelected = (partial: Partial<PhotoMeta>) => {
-    if (!currentPhoto || multiSelectedIds.length < 2) {
-      return;
-    }
-    setPhotos((prev) =>
-      prev.map((photo) =>
-        multiSelectedSet.has(photo.id)
-          ? {
-              ...photo,
-              meta: {
-                ...photo.meta,
-                ...partial,
-              },
-            }
-          : photo,
-      ),
-    );
-  };
-
   const handleApplyDateToSelected = () => {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({ date: currentPhoto.meta.date });
+    const result = applyMetaToSelected({ date: currentPhoto.meta.date });
+    showApplyFeedback('date', '日期', result);
   };
 
   const handleApplyLocationToSelected = () => {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({
+    const result = applyMetaToSelected({
       location: currentPhoto.meta.location,
       locationSkipped: currentPhoto.meta.locationSkipped,
     });
+    showApplyFeedback('location', '地点', result);
   };
 
   const handleApplyDescriptionToSelected = () => {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({
+    const result = applyMetaToSelected({
       description: currentPhoto.meta.description,
       descriptionSkipped: currentPhoto.meta.descriptionSkipped,
     });
+    showApplyFeedback('description', '描述', result);
   };
 
   const handleApplyAllToSelected = () => {
     if (!currentPhoto) {
       return;
     }
-    applyMetaToSelected({
+    const result = applyMetaToSelected({
       date: currentPhoto.meta.date,
       location: currentPhoto.meta.location,
       locationSkipped: currentPhoto.meta.locationSkipped,
       description: currentPhoto.meta.description,
       descriptionSkipped: currentPhoto.meta.descriptionSkipped,
     });
+    showApplyFeedback('all', '全部信息', result);
   };
 
   const toggleCurrentSelected = () => {
@@ -1226,12 +1366,13 @@ export function App() {
                 : 'thumb-select';
               const isMultiSelected = multiSelectedSet.has(item.id);
               const isActive = item.id === currentPhotoId;
+              const isFlashing = flashIds.has(item.id);
               return (
                 <button
                   type="button"
                   className={`thumb-cell ${isActive ? 'thumb-cell--active' : ''} ${
                     isMultiSelected ? 'thumb-cell--multi' : ''
-                  }`}
+                  } ${isFlashing ? 'thumb-cell--flash' : ''}`}
                   key={item.id}
                   onClick={(event) => handleThumbnailClick(event, pageStart + index, item.id)}
                 >
@@ -1494,35 +1635,35 @@ export function App() {
             <div className="form-actions__row form-actions__row--top">
               <div className="form-actions__fields">
                 <button
-                  className="btn btn--ghost"
+                  className={`btn btn--ghost ${getActionClass('date')}`}
                   onClick={handleApplyDateToSelected}
                   disabled={!canApplyToSelected}
                 >
-                  应用日期
+                  {getActionLabel('date')}
                 </button>
                 <button
-                  className="btn btn--ghost"
+                  className={`btn btn--ghost ${getActionClass('location')}`}
                   onClick={handleApplyLocationToSelected}
                   disabled={!canApplyToSelected}
                 >
-                  应用地点
+                  {getActionLabel('location')}
                 </button>
                 <button
-                  className="btn btn--ghost"
+                  className={`btn btn--ghost ${getActionClass('description')}`}
                   onClick={handleApplyDescriptionToSelected}
                   disabled={!canApplyToSelected}
                 >
-                  应用描述
+                  {getActionLabel('description')}
                 </button>
               </div>
             </div>
             <div className="form-actions__row form-actions__row--bottom">
               <button
-                className="btn btn--primary btn--block"
+                className={`btn btn--primary btn--block ${getActionClass('all')}`}
                 onClick={handleApplyAllToSelected}
                 disabled={!canApplyToSelected}
               >
-                应用全部
+                {getActionLabel('all')}
               </button>
             </div>
           </div>
@@ -1546,7 +1687,14 @@ export function App() {
           总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
         </div>
         <div className="status-bar__right">
-          <div className="status-bar__text">{apiAvailable ? statusMessage : '预加载未就绪'}</div>
+          <div
+            className={`status-bar__text ${
+              transientMessage ? 'status-bar__text--transient' : ''
+            }`}
+            aria-live="polite"
+          >
+            {statusText}
+          </div>
           {exportProgress && isExporting ? (
             <div
               className="status-bar__progress"
