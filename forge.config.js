@@ -2,7 +2,13 @@ const { AutoUnpackNativesPlugin } = require('@electron-forge/plugin-auto-unpack-
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
-const keepPrefixes = ['/.vite', '/node_modules'];
+const keepPrefixes = [
+  '/.vite',
+  '/node_modules/sharp',
+  '/node_modules/@img',
+  '/node_modules/detect-libc',
+  '/node_modules/semver',
+];
 
 module.exports = {
   packagerConfig: {
