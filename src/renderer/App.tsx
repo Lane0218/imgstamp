@@ -196,7 +196,7 @@ export function App() {
   const launchHandledRef = useRef(false);
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
-  const statusText = transientMessage ?? (apiAvailable ? statusMessage : '预加载未就绪');
+  const statusText = apiAvailable ? (transientMessage ?? statusMessage) : '预加载未就绪';
 
   const pushTransientMessage = (message: string, duration = STATUS_FEEDBACK_DURATION) => {
     setTransientMessage(message);
@@ -1116,18 +1116,18 @@ export function App() {
   ) => {
     if (result.targetCount === 0) {
       pushTransientMessage('请先多选图片');
-      flashActionButton(action, 'warn', '请先多选');
+      flashActionButton(action, 'warn', '请多选');
       return;
     }
     if (result.changedIds.length === 0) {
       pushTransientMessage('已一致，无需应用');
-      flashActionButton(action, 'warn', '未产生变更');
+      flashActionButton(action, 'warn', '无变更');
       return;
     }
     const suffix =
       result.changedIds.length < result.targetCount ? '（其余已一致）' : '';
     pushTransientMessage(`已应用${label}到 ${result.changedIds.length} 张${suffix}`);
-    flashActionButton(action, 'ok', '已应用 ✓');
+    flashActionButton(action, 'ok', '已应用');
     flashThumbnails(result.changedIds);
   };
 
@@ -1687,12 +1687,7 @@ export function App() {
           总计: {photos.length} 张 | 已选: {selectedPhotos.length} 张 | 待完善: {incompleteCount} 张
         </div>
         <div className="status-bar__right">
-          <div
-            className={`status-bar__text ${
-              transientMessage ? 'status-bar__text--transient' : ''
-            }`}
-            aria-live="polite"
-          >
+          <div className="status-bar__text" aria-live="polite">
             {statusText}
           </div>
           {exportProgress && isExporting ? (
