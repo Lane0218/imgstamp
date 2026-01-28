@@ -68,12 +68,11 @@ Get the installer from GitHub Releases: `ImgStamp-Setup-*.exe`
 
 ## Development & Build
 
-Development:
+Run locally:
 
 ```bash
 npm install
-npm run dev:renderer
-npm run start
+npm run run
 ```
 
 Build & package:
@@ -86,6 +85,7 @@ npm run dist
 Publish to GitHub Release:
 
 ```bash
+$env:GH_TOKEN="your_token"
 npm run release
 ```
 
