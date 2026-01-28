@@ -1167,10 +1167,12 @@ export function App() {
       shouldApply = showApplyFeedback('date', '日期', result);
     });
     if (shouldApply && result.apply) {
-      window.setTimeout(() => {
-        result.apply?.();
-        flashThumbnails(result.changedIds);
-      }, 0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          result.apply?.();
+          flashThumbnails(result.changedIds);
+        });
+      });
     }
   };
 
@@ -1187,10 +1189,12 @@ export function App() {
       shouldApply = showApplyFeedback('location', '地点', result);
     });
     if (shouldApply && result.apply) {
-      window.setTimeout(() => {
-        result.apply?.();
-        flashThumbnails(result.changedIds);
-      }, 0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          result.apply?.();
+          flashThumbnails(result.changedIds);
+        });
+      });
     }
   };
 
@@ -1207,10 +1211,12 @@ export function App() {
       shouldApply = showApplyFeedback('description', '描述', result);
     });
     if (shouldApply && result.apply) {
-      window.setTimeout(() => {
-        result.apply?.();
-        flashThumbnails(result.changedIds);
-      }, 0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          result.apply?.();
+          flashThumbnails(result.changedIds);
+        });
+      });
     }
   };
 
@@ -1230,10 +1236,12 @@ export function App() {
       shouldApply = showApplyFeedback('all', '全部信息', result);
     });
     if (shouldApply && result.apply) {
-      window.setTimeout(() => {
-        result.apply?.();
-        flashThumbnails(result.changedIds);
-      }, 0);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          result.apply?.();
+          flashThumbnails(result.changedIds);
+        });
+      });
     }
   };
 
