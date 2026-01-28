@@ -6,13 +6,16 @@ export default defineConfig({
   build: {
     outDir: 'dist/main',
     emptyOutDir: true,
-    lib: {
-      entry: path.resolve('src/main/main.ts'),
-      formats: ['cjs'],
-      fileName: () => 'main.js',
-    },
+    ssr: path.resolve('src/main/main.ts'),
     rollupOptions: {
       external: ['electron', 'sharp'],
+      output: {
+        format: 'cjs',
+        entryFileNames: 'main.js',
+      },
     },
+  },
+  ssr: {
+    target: 'node18',
   },
 });
