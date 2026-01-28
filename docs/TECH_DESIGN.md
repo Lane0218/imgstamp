@@ -4,7 +4,7 @@
 
 基于“易上手”、“Web生态”、“本地处理”的原则，选用以下技术栈：
 
-- **应用框架**: Electron + electron-forge
+- **应用框架**: Electron + electron-builder（NSIS 安装器）
 - **前端框架**: React + TypeScript + Vite
 - **UI 组件库**: Ant Design
 - **状态管理**: Zustand (轻量级，适合本项目规模)
@@ -139,3 +139,13 @@ imgstamp/
 
 ### 4.3 HEIC 格式支持
 - **说明**: 当前版本不支持 HEIC，仅支持 JPG/PNG。
+
+## 6. 构建与打包流程
+
+- **本地开发**：
+  - `npm run dev:renderer` 启动渲染进程开发服务器
+  - `npm run start` 启动 Electron（会读取 `VITE_DEV_SERVER_URL`）
+- **生产构建**：
+  - `npm run build` 生成 `dist/main`、`dist/preload`、`dist/renderer`
+- **Windows 安装包**：
+  - `npm run dist` 使用 electron-builder 生成 NSIS 安装器，输出在 `out/`

@@ -1,13 +1,8 @@
 import { app, BrowserWindow, ipcMain, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './ipc';
 import { buildAppMenu, setWindowTitle } from './menu';
-
-if (started) {
-  app.quit();
-}
 
 let mainWindow: BrowserWindow | null = null;
 let launcherWindow: BrowserWindow | null = null;
