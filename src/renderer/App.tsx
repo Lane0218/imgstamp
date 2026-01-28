@@ -867,8 +867,6 @@ export function App() {
     }
     const nextId = photos[start]?.id ?? null;
     setCurrentPhotoId(nextId);
-    setMultiSelectedIds(nextId ? [nextId] : []);
-    setSelectionAnchorIndex(nextId ? start : null);
   }, [pageIndex, pageSize, photos, currentPhotoId]);
 
   const selectedPhotos = photos.filter((photo) => photo.selected);
