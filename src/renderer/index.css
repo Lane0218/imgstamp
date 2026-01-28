@@ -875,18 +875,21 @@ select {
   background: rgba(255, 248, 238, 0.6);
   font-size: 12px;
   color: var(--muted);
+  box-sizing: border-box;
 }
 
 .pager__group {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .pager__list {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .pager__item {
@@ -920,6 +923,7 @@ select {
 .pager__ellipsis {
   color: var(--muted);
   padding: 0 2px;
+  white-space: nowrap;
 }
 
 .splitter {
