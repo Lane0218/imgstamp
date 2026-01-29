@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="300" alt="ImgStamp Logo" />
+  <img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
 <hr />
@@ -34,6 +34,10 @@
 </p>
 
 ImgStamp 是一款个人离线照片整理工具，用于批量添加白边与文字标注（日期 / 地点 / 描述），并导出风格统一的成品图。适合每年集中整理相册、从大量照片中筛选精华并进行统一排版。
+
+## 截图
+
+<img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/demo.png" width="100%" alt="ImgStamp 截图" />
 
 ## 功能特性
 

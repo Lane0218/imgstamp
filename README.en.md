@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/renderer/assets/logo.png" width="300" alt="ImgStamp Logo" />
+  <img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
 <hr />
@@ -34,6 +34,10 @@
 </p>
 
 ImgStamp is an offline desktop tool for organizing personal photos. It adds a clean white border and text annotations (date / location / description) in batch, then exports a consistent, print‑ready style. It is ideal for yearly photo curation and selecting highlights from large collections.
+
+## Screenshot
+
+<img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/demo.png" width="100%" alt="ImgStamp Screenshot" />
 
 ## Features
 
