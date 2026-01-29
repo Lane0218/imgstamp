@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/logo.png" width="300" alt="ImgStamp Logo" />
+  <img src="assets/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
 <hr />
@@ -37,7 +37,7 @@ ImgStamp is an offline desktop tool for organizing personal photos. It adds a cl
 
 ## Screenshot
 
-<img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/demo.png" width="100%" alt="ImgStamp Screenshot" />
+<img src="assets/demo.png" width="100%" alt="ImgStamp Screenshot" />
 
 ## Features
 

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/logo.png" width="300" alt="ImgStamp Logo" />
+  <img src="assets/logo.png" width="300" alt="ImgStamp Logo" />
 </p>
 
 <hr />
@@ -37,7 +37,7 @@ ImgStamp 是一款个人离线照片整理工具，用于批量添加白边与�
 
 ## 截图
 
-<img src="https://laneljc-1321736255.cos.ap-nanjing.myqcloud.com/pic/demo.png" width="100%" alt="ImgStamp 截图" />
+<img src="assets/demo.png" width="100%" alt="ImgStamp 截图" />
 
 ## 功能特性
 
