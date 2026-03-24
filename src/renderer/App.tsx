@@ -5,7 +5,7 @@ type PhotoMeta = {
   date: string | null;
   location: string;
   description: string;
-  exifDate: string | null;
+  exifDate: string | null | undefined;
   locationSkipped: boolean;
   descriptionSkipped: boolean;
 };
@@ -71,7 +71,7 @@ const normalizeMeta = (meta?: Partial<PhotoMeta>): PhotoMeta => ({
   date: meta?.date ?? null,
   location: meta?.location ?? '湖南长沙',
   description: meta?.description ?? '',
-  exifDate: meta?.exifDate ?? null,
+  exifDate: meta?.exifDate,
   locationSkipped: Boolean(meta?.locationSkipped),
   descriptionSkipped: Boolean(meta?.descriptionSkipped),
 });
@@ -1004,7 +1004,7 @@ export function App() {
     let cancelled = false;
 
     const loadExifForVisible = async () => {
-      const pending = visiblePhotos.filter((photo) => photo.meta.exifDate === null);
+      const pending = visiblePhotos.filter((photo) => photo.meta.exifDate === undefined);
       if (pending.length === 0) {
         return;
       }
@@ -1022,16 +1022,29 @@ export function App() {
         }
 
         const dateMap = new Map(results.map((item) => [item.id, item.date]));
-        setPhotos((prev) =>
-          prev.map((photo) => {
-            const exifDate = dateMap.get(photo.id);
-            if (exifDate === undefined) {
+        setPhotos((prev) => {
+          let changed = false;
+          const next = prev.map((photo) => {
+            if (!dateMap.has(photo.id)) {
               return photo;
             }
-            const nextMeta = { ...photo.meta, exifDate, date: photo.meta.date ?? exifDate };
-            return { ...photo, meta: nextMeta };
-          }),
-        );
+            const exifDate = dateMap.get(photo.id);
+            const nextDate = photo.meta.date ?? exifDate ?? null;
+            if (photo.meta.exifDate === exifDate && photo.meta.date === nextDate) {
+              return photo;
+            }
+            changed = true;
+            return {
+              ...photo,
+              meta: {
+                ...photo.meta,
+                exifDate,
+                date: nextDate,
+              },
+            };
+          });
+          return changed ? next : prev;
+        });
       } catch (error) {
         console.error(error);
       }
