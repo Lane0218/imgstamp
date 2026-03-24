@@ -71,6 +71,7 @@ type SourceInfo = { width: number; height: number };
 type Typography = { fontSize: number; paddingX: number; paddingY: number };
 type Bounds = { x: number; y: number; width: number; height: number };
 type TextRun = { text: string; script: 'cjk' | 'latin' };
+type PreviewOptions = { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' };
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -615,7 +616,7 @@ async function buildStampedImage(
 async function buildPreviewImage(
   sourcePath: string,
   meta: { date: string | null; location: string; description: string },
-  options: { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' },
+  options: PreviewOptions,
 ) {
   const exportSize = EXPORT_SIZE_PX[options.size] ?? EXPORT_SIZE_PX['5'];
   const previewWidth = 900;
@@ -632,6 +633,10 @@ async function buildPreviewImage(
   });
 }
 
+function toFileUrl(targetPath: string): string {
+  return pathToFileURL(targetPath).toString();
+}
+
 async function getThumbnailPath(
   baseDir: string,
   relativePath: string,
@@ -643,6 +648,52 @@ async function getThumbnailPath(
   const thumbPath = path.join(cacheDir, `${key}.jpg`);
   const sourcePath = path.join(baseDir, relativePath);
   return { sourcePath, thumbPath };
+}
+
+async function getPreviewPath(
+  baseDir: string,
+  relativePath: string,
+  meta: { date: string | null; location: string; description: string },
+  options: PreviewOptions,
+): Promise<{ previewPath: string; previewDir: string }> {
+  const previewDir = path.join(app.getPath('userData'), 'imgstamp-preview-cache');
+  await fs.mkdir(previewDir, { recursive: true });
+  const key = createHash('sha1')
+    .update(
+      JSON.stringify({
+        baseDir,
+        relativePath,
+        meta,
+        options,
+        version: 'preview-v1',
+      }),
+    )
+    .digest('hex');
+  const previewPath = path.join(previewDir, `${key}.jpg`);
+  return { previewPath, previewDir };
+}
+
+async function pruneCacheDir(cacheDir: string, limit: number): Promise<void> {
+  try {
+    const entries = await fs.readdir(cacheDir, { withFileTypes: true });
+    const files = await Promise.all(
+      entries
+        .filter((entry) => entry.isFile())
+        .map(async (entry) => {
+          const filePath = path.join(cacheDir, entry.name);
+          const stat = await fs.stat(filePath);
+          return { filePath, mtimeMs: stat.mtimeMs };
+        }),
+    );
+    if (files.length <= limit) {
+      return;
+    }
+    files.sort((a, b) => a.mtimeMs - b.mtimeMs);
+    const expired = files.slice(0, files.length - limit);
+    await Promise.all(expired.map((entry) => fs.rm(entry.filePath, { force: true })));
+  } catch (error) {
+    console.warn('清理图片缓存失败', error);
+  }
 }
 
 async function writeFileAtomic(filePath: string, data: Buffer): Promise<void> {
@@ -783,13 +834,11 @@ export function registerIpcHandlers(): void {
 
       const safeSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 256;
       const { sourcePath, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
-      const outputMime = 'image/jpeg';
-
       try {
         const cached = await fs.readFile(thumbPath);
         try {
           await sharp(cached).metadata();
-          return `data:${outputMime};base64,${cached.toString('base64')}`;
+          return toFileUrl(thumbPath);
         } catch (error) {
           console.warn('缩略图缓存损坏，尝试重建', thumbPath, error);
           await fs.rm(thumbPath, { force: true });
@@ -804,14 +853,11 @@ export function registerIpcHandlers(): void {
           .jpeg({ quality: 80 })
           .toBuffer();
         await writeFileAtomic(thumbPath, buffer);
-        return `data:${outputMime};base64,${buffer.toString('base64')}`;
+        return toFileUrl(thumbPath);
       } catch (error) {
         console.error(error);
         try {
-          const ext = path.extname(sourcePath).toLowerCase();
-          const fallbackMime = ext === '.png' ? 'image/png' : 'image/jpeg';
-          const buffer = await fs.readFile(sourcePath);
-          return `data:${fallbackMime};base64,${buffer.toString('base64')}`;
+          return toFileUrl(sourcePath);
         } catch (readError) {
           console.error(readError);
           return '';
@@ -849,13 +895,18 @@ export function registerIpcHandlers(): void {
       const sourcePath = path.join(baseDir, relativePath);
       try {
         if (options.mode === 'original') {
-          const ext = path.extname(sourcePath).toLowerCase();
-          const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
-          const buffer = await fs.readFile(sourcePath);
-          return `data:${mime};base64,${buffer.toString('base64')}`;
+          return toFileUrl(sourcePath);
         }
-        const buffer = await buildPreviewImage(sourcePath, meta, options);
-        return `data:image/jpeg;base64,${buffer.toString('base64')}`;
+        const { previewPath, previewDir } = await getPreviewPath(baseDir, relativePath, meta, options);
+        try {
+          await fs.access(previewPath);
+          return toFileUrl(previewPath);
+        } catch {
+          const buffer = await buildPreviewImage(sourcePath, meta, options);
+          await writeFileAtomic(previewPath, buffer);
+          await pruneCacheDir(previewDir, 120);
+          return toFileUrl(previewPath);
+        }
       } catch (error) {
         console.error(error);
         return '';

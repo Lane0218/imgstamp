@@ -15,7 +15,6 @@ type PhotoItem = {
   filename: string;
   relativePath: string;
   fileUrl: string;
-  thumbnailUrl?: string;
   selected: boolean;
   meta: PhotoMeta;
 };
@@ -66,6 +65,7 @@ const ACTION_LABELS: Record<ActionKey, string> = {
 const ACTION_FEEDBACK_DURATION = 800;
 const STATUS_FEEDBACK_DURATION = 2600;
 const THUMB_FLASH_DURATION = 520;
+const THUMBNAIL_CACHE_LIMIT = 120;
 
 const normalizeMeta = (meta?: Partial<PhotoMeta>): PhotoMeta => ({
   date: meta?.date ?? null,
@@ -146,6 +146,7 @@ export function App() {
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
@@ -165,9 +166,23 @@ export function App() {
     exportSize: '5' | '5L' | '6' | '6L';
     photos: PhotoItem[];
   }>({ baseDir: null, exportSize: '5L', photos: [] });
+  const latestStateRef = useRef<{
+    projectPath: string | null;
+    baseDir: string | null;
+    exportSize: '5' | '5L' | '6' | '6L';
+    photos: PhotoItem[];
+    isExporting: boolean;
+  }>({
+    projectPath: null,
+    baseDir: null,
+    exportSize: '5L',
+    photos: [],
+    isExporting: false,
+  });
   const actionTimersRef = useRef<Partial<Record<ActionKey, number>>>({});
   const transientTimerRef = useRef<number | null>(null);
   const flashTimersRef = useRef<Map<string, { token: number; timeoutId: number }>>(new Map());
+  const thumbnailOrderRef = useRef<string[]>([]);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sizesInitialized = useRef(false);
@@ -237,6 +252,37 @@ export function App() {
     });
   };
 
+  const resetThumbnailCache = () => {
+    thumbnailOrderRef.current = [];
+    setThumbnailUrls({});
+  };
+
+  const rememberThumbnailUrls = (entries: Array<{ id: string; url: string }>) => {
+    if (entries.length === 0) {
+      return;
+    }
+    setThumbnailUrls((prev) => {
+      const next = { ...prev };
+      const order = thumbnailOrderRef.current.filter((id) => id in next);
+      entries.forEach(({ id, url }) => {
+        next[id] = url;
+        const existingIndex = order.indexOf(id);
+        if (existingIndex >= 0) {
+          order.splice(existingIndex, 1);
+        }
+        order.push(id);
+      });
+      while (order.length > THUMBNAIL_CACHE_LIMIT) {
+        const expiredId = order.shift();
+        if (expiredId) {
+          delete next[expiredId];
+        }
+      }
+      thumbnailOrderRef.current = order;
+      return next;
+    });
+  };
+
   const getActionLabel = (key: ActionKey) => actionFeedback[key]?.label ?? ACTION_LABELS[key];
   const getActionClass = (key: ActionKey) =>
     actionFeedback[key]?.tone ? `btn--feedback-${actionFeedback[key]?.tone}` : '';
@@ -246,27 +292,12 @@ export function App() {
     setStatusMessage(`已切换导出尺寸: ${label}`);
   };
 
-  useEffect(() => {
-    return () => {
-      if (transientTimerRef.current) {
-        window.clearTimeout(transientTimerRef.current);
-      }
-      Object.values(actionTimersRef.current).forEach((timerId) => {
-        if (timerId) {
-          window.clearTimeout(timerId);
-        }
-      });
-      flashTimersRef.current.forEach((entry) => {
-        window.clearTimeout(entry.timeoutId);
-      });
-      flashTimersRef.current.clear();
-    };
-  }, []);
-
   const handleExport = async () => {
     if (!window.imgstamp) {
       return;
     }
+
+    const { baseDir, photos, exportSize, isExporting } = latestStateRef.current;
     if (isExporting) {
       return;
     }
@@ -292,6 +323,7 @@ export function App() {
       return;
     }
 
+    latestStateRef.current.isExporting = true;
     setExportDialog(null);
     setExportProgress({ current: 0, total: readyItems.length });
     setIsExporting(true);
@@ -333,10 +365,28 @@ export function App() {
       });
       console.error(error);
     } finally {
+      latestStateRef.current.isExporting = false;
       setIsExporting(false);
       setExportProgress(null);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (transientTimerRef.current) {
+        window.clearTimeout(transientTimerRef.current);
+      }
+      Object.values(actionTimersRef.current).forEach((timerId) => {
+        if (timerId) {
+          window.clearTimeout(timerId);
+        }
+      });
+      flashTimersRef.current.forEach((entry) => {
+        window.clearTimeout(entry.timeoutId);
+      });
+      flashTimersRef.current.clear();
+    };
+  }, []);
 
   const beginProjectLoad = () => {
     suppressDirtyRef.current = true;
@@ -351,7 +401,14 @@ export function App() {
 
   useEffect(() => {
     latestProjectRef.current = { baseDir, exportSize, photos };
-  }, [baseDir, exportSize, photos]);
+    latestStateRef.current = {
+      projectPath,
+      baseDir,
+      exportSize,
+      photos,
+      isExporting,
+    };
+  }, [projectPath, baseDir, exportSize, photos, isExporting]);
 
   useEffect(() => {
     if (!projectPath || suppressDirtyRef.current) {
@@ -401,6 +458,9 @@ export function App() {
         const fallbackName = getNameFromPath(options?.projectPath || dir) || '未命名项目';
         const nextName = options?.projectName || fallbackName || '未命名项目';
         const recentName = options?.projectName || fallbackName || '未命名项目';
+        const currentSize = latestStateRef.current.exportSize;
+        resetThumbnailCache();
+        setPreviewUrl(null);
         setPhotos(nextPhotos);
         setCurrentPhotoId(firstId);
         setMultiSelectedIds(firstId ? [firstId] : []);
@@ -415,7 +475,7 @@ export function App() {
             version: '1.0',
             name: nextName,
             baseDir: dir,
-            exportSize,
+            exportSize: currentSize,
             photos: nextPhotos.map((photo) => ({
               id: photo.id,
               filename: photo.filename,
@@ -464,6 +524,8 @@ export function App() {
             };
           });
           const firstId = merged[0]?.id ?? null;
+          resetThumbnailCache();
+          setPreviewUrl(null);
           setPhotos(merged);
           setCurrentPhotoId(firstId);
           setMultiSelectedIds(firstId ? [firstId] : []);
@@ -540,7 +602,8 @@ export function App() {
 
     const handleSaveProject = async () => {
       try {
-        let targetPath = projectPath;
+        const snapshot = latestStateRef.current;
+        let targetPath = snapshot.projectPath;
         if (!targetPath) {
           targetPath = await window.imgstamp.saveProjectFile();
         }
@@ -551,9 +614,9 @@ export function App() {
         const projectToSave: ProjectData = {
           version: '1.0',
           name: nameFromPath,
-          baseDir,
-          exportSize,
-          photos: photos.map((photo) => ({
+          baseDir: snapshot.baseDir,
+          exportSize: snapshot.exportSize,
+          photos: snapshot.photos.map((photo) => ({
             id: photo.id,
             filename: photo.filename,
             relativePath: photo.relativePath,
@@ -571,12 +634,12 @@ export function App() {
           suppressDirtyRef.current = false;
         }, 0);
         await window.imgstamp.setWindowTitle(nameFromPath);
-        if (baseDir) {
+        if (snapshot.baseDir) {
           await recordRecent({
             name: nameFromPath,
             kind: 'project',
             path: targetPath,
-            baseDir,
+            baseDir: snapshot.baseDir,
           });
         }
       } catch (error) {
@@ -635,7 +698,7 @@ export function App() {
       unsubLauncherOpen();
       unsubExportProgress();
     };
-  }, [projectPath, projectName, baseDir, photos, exportSize, isExporting]);
+  }, []);
 
   useEffect(() => {
     if (!window.imgstamp || !projectPath || isExporting) {
@@ -883,7 +946,7 @@ export function App() {
     let cancelled = false;
 
     const loadThumbnails = async () => {
-      const pending = visiblePhotos.filter((photo) => !photo.thumbnailUrl);
+      const pending = visiblePhotos.filter((photo) => !thumbnailUrls[photo.id]);
       if (pending.length === 0) {
         return;
       }
@@ -900,13 +963,7 @@ export function App() {
           return;
         }
 
-        const urlMap = new Map(results.map((item) => [item.id, item.url]));
-        setPhotos((prev) =>
-          prev.map((photo) => {
-            const url = urlMap.get(photo.id);
-            return url ? { ...photo, thumbnailUrl: url } : photo;
-          }),
-        );
+        rememberThumbnailUrls(results.filter((item) => Boolean(item.url)));
       } catch (error) {
         console.error(error);
       }
@@ -917,7 +974,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [visiblePhotos, baseDir]);
+  }, [visiblePhotos, baseDir, thumbnailUrls]);
 
   useEffect(() => {
     if (!window.imgstamp || !baseDir) {
@@ -1381,7 +1438,7 @@ export function App() {
                         );
                       }}
                     />
-                    <img src={item.thumbnailUrl ?? item.fileUrl} alt={item.filename} loading="lazy" />
+                    <img src={thumbnailUrls[item.id] ?? item.fileUrl} alt={item.filename} loading="lazy" />
                   </div>
                 </button>
               );
