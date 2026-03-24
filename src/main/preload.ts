@@ -36,6 +36,7 @@ const api = {
     ipcRenderer.invoke('project:load', projectPath),
   diagnosticLog: (message: string, detail?: unknown) =>
     ipcRenderer.invoke('diagnostic:log', message, detail),
+  isDebugMode: () => ipcRenderer.invoke('diagnostic:isDebugMode'),
   startExport: (
     baseDir: string,
     exportDir: string,

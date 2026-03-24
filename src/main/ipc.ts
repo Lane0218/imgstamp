@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import exifr from 'exifr';
-import { logError, logInfo } from './logger';
+import { isDebugLoggingEnabled, logDebug, logError, logInfo } from './logger';
 import { setWindowTitle } from './menu';
 
 type SaveProjectPayload = {
@@ -73,6 +73,15 @@ type Typography = { fontSize: number; paddingX: number; paddingY: number };
 type Bounds = { x: number; y: number; width: number; height: number };
 type TextRun = { text: string; script: 'cjk' | 'latin' };
 type PreviewOptions = { size: '5' | '5L' | '6' | '6L'; mode: 'final' | 'original' };
+type OperationName = 'thumbnail' | 'preview' | 'exif' | 'export';
+
+const operationCounters: Record<OperationName, number> = {
+  thumbnail: 0,
+  preview: 0,
+  exif: 0,
+  export: 0,
+};
+let operationSequence = 0;
 
 function formatExportFolderName(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -82,6 +91,48 @@ function formatExportFolderName(date: Date): string {
   const hh = pad(date.getHours());
   const min = pad(date.getMinutes());
   return `ImgStamp导出-${yyyy}${mm}${dd}-${hh}${min}`;
+}
+
+function beginOperation(name: OperationName, detail?: unknown): { id: number; startedAt: number } {
+  operationSequence += 1;
+  operationCounters[name] += 1;
+  const ctx = {
+    id: operationSequence,
+    inFlight: operationCounters[name],
+    detail,
+  };
+  logDebug(`${name} 开始`, ctx);
+  return { id: operationSequence, startedAt: Date.now() };
+}
+
+function endOperation(
+  name: OperationName,
+  context: { id: number; startedAt: number },
+  detail?: unknown,
+): void {
+  operationCounters[name] = Math.max(0, operationCounters[name] - 1);
+  logDebug(`${name} 结束`, {
+    id: context.id,
+    inFlight: operationCounters[name],
+    durationMs: Date.now() - context.startedAt,
+    detail,
+  });
+}
+
+function failOperation(
+  name: OperationName,
+  context: { id: number; startedAt: number },
+  error: unknown,
+  detail?: unknown,
+): void {
+  operationCounters[name] = Math.max(0, operationCounters[name] - 1);
+  logError(`${name} 失败`, {
+    id: context.id,
+    inFlight: operationCounters[name],
+    durationMs: Date.now() - context.startedAt,
+    detail,
+    error,
+  });
 }
 
 async function ensureUniqueDir(basePath: string): Promise<string> {
@@ -760,10 +811,17 @@ async function upsertRecentProject(
 }
 
 export function registerIpcHandlers(): void {
+  if (isDebugLoggingEnabled()) {
+    sharp.cache(false);
+    logDebug('sharp 调试模式已启用', { cache: 'disabled' });
+  }
+
   ipcMain.handle('diagnostic:log', async (_event, message: string, detail?: unknown) => {
     logInfo(`renderer:${message}`, detail);
     return true;
   });
+
+  ipcMain.handle('diagnostic:isDebugMode', async () => isDebugLoggingEnabled());
 
   ipcMain.handle('recent:list', async () => readRecentProjects());
 
@@ -851,12 +909,15 @@ export function registerIpcHandlers(): void {
         throw new Error('参数不能为空');
       }
 
+      const operation = beginOperation('thumbnail', { baseDir, relativePath, size });
+
       const safeSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 256;
       const { sourcePath, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
       try {
         const cached = await fs.readFile(thumbPath);
         try {
           await sharp(cached).metadata();
+          endOperation('thumbnail', operation, { cached: true, safeSize });
           return toFileUrl(thumbPath);
         } catch (error) {
           console.warn('缩略图缓存损坏，尝试重建', thumbPath, error);
@@ -872,9 +933,10 @@ export function registerIpcHandlers(): void {
           .jpeg({ quality: 80 })
           .toBuffer();
         await writeFileAtomic(thumbPath, buffer);
+        endOperation('thumbnail', operation, { cached: false, safeSize, outputBytes: buffer.length });
         return toFileUrl(thumbPath);
       } catch (error) {
-        console.error(error);
+        failOperation('thumbnail', operation, error, { sourcePath, safeSize });
         try {
           return toFileUrl(sourcePath);
         } catch (readError) {
@@ -890,11 +952,14 @@ export function registerIpcHandlers(): void {
       throw new Error('参数不能为空');
     }
     const sourcePath = path.join(baseDir, relativePath);
+    const operation = beginOperation('exif', { baseDir, relativePath });
     try {
       const data = await exifr.parse(sourcePath, { translateValues: false });
-      return formatExifDate(data?.DateTimeOriginal || data?.CreateDate || data?.ModifyDate);
+      const result = formatExifDate(data?.DateTimeOriginal || data?.CreateDate || data?.ModifyDate);
+      endOperation('exif', operation, { sourcePath, hasResult: Boolean(result) });
+      return result;
     } catch (error) {
-      console.error(error);
+      failOperation('exif', operation, error, { sourcePath });
       return null;
     }
   });
@@ -912,22 +977,31 @@ export function registerIpcHandlers(): void {
         throw new Error('参数不能为空');
       }
       const sourcePath = path.join(baseDir, relativePath);
+      const operation = beginOperation('preview', { baseDir, relativePath, options });
       try {
         if (options.mode === 'original') {
+          endOperation('preview', operation, { mode: options.mode, sourcePath, cached: 'source' });
           return toFileUrl(sourcePath);
         }
         const { previewPath, previewDir } = await getPreviewPath(baseDir, relativePath, meta, options);
         try {
           await fs.access(previewPath);
+          endOperation('preview', operation, { mode: options.mode, previewPath, cached: true });
           return toFileUrl(previewPath);
         } catch {
           const buffer = await buildPreviewImage(sourcePath, meta, options);
           await writeFileAtomic(previewPath, buffer);
           await pruneCacheDir(previewDir, 120);
+          endOperation('preview', operation, {
+            mode: options.mode,
+            previewPath,
+            cached: false,
+            outputBytes: buffer.length,
+          });
           return toFileUrl(previewPath);
         }
       } catch (error) {
-        console.error(error);
+        failOperation('preview', operation, error, { sourcePath, options });
         return '';
       }
     },
@@ -943,37 +1017,60 @@ export function registerIpcHandlers(): void {
     const outputRoot = await ensureUniqueDir(baseOutputDir);
     let exported = 0;
     let failed = 0;
+    const operation = beginOperation('export', {
+      baseDir: payload.baseDir,
+      exportDir: payload.exportDir,
+      size: payload.size,
+      count: payload.items.length,
+    });
 
-    for (let index = 0; index < payload.items.length; index += 1) {
-      const item = payload.items[index];
-      const sourcePath = path.join(payload.baseDir, item.relativePath);
-      const parsed = path.parse(item.relativePath);
-      const ext = parsed.ext.toLowerCase();
-      const outputDir = path.join(outputRoot, parsed.dir);
-      const outputExt = ext === '.png' ? '.png' : '.jpg';
-      const outputPath = path.join(outputDir, `${parsed.name}${outputExt}`);
+    try {
+      for (let index = 0; index < payload.items.length; index += 1) {
+        const item = payload.items[index];
+        const sourcePath = path.join(payload.baseDir, item.relativePath);
+        const parsed = path.parse(item.relativePath);
+        const ext = parsed.ext.toLowerCase();
+        const outputDir = path.join(outputRoot, parsed.dir);
+        const outputExt = ext === '.png' ? '.png' : '.jpg';
+        const outputPath = path.join(outputDir, `${parsed.name}${outputExt}`);
 
-      try {
-        await fs.mkdir(outputDir, { recursive: true });
-        const buffer = await buildStampedImage(sourcePath, item.meta, size, {
-          includeText: true,
-          format: outputExt === '.png' ? 'png' : 'jpeg',
-        });
-        await fs.writeFile(outputPath, buffer);
-        exported += 1;
-      } catch (error) {
-        console.error(error);
-        failed += 1;
-      } finally {
-        event.sender.send('export:progress', {
-          current: index + 1,
-          total: payload.items.length,
-          filename: item.filename,
-        });
+        try {
+          await fs.mkdir(outputDir, { recursive: true });
+          const buffer = await buildStampedImage(sourcePath, item.meta, size, {
+            includeText: true,
+            format: outputExt === '.png' ? 'png' : 'jpeg',
+          });
+          await fs.writeFile(outputPath, buffer);
+          exported += 1;
+          logDebug('export 单项完成', {
+            filename: item.filename,
+            index: index + 1,
+            total: payload.items.length,
+            outputBytes: buffer.length,
+          });
+        } catch (error) {
+          console.error(error);
+          failed += 1;
+          logError('export 单项失败', {
+            filename: item.filename,
+            index: index + 1,
+            total: payload.items.length,
+            error,
+          });
+        } finally {
+          event.sender.send('export:progress', {
+            current: index + 1,
+            total: payload.items.length,
+            filename: item.filename,
+          });
+        }
       }
+      endOperation('export', operation, { exported, failed, total: payload.items.length });
+      return { exported, failed, total: payload.items.length, outputDir: outputRoot };
+    } catch (error) {
+      failOperation('export', operation, error, { exported, failed, total: payload.items.length });
+      throw error;
     }
-
-    return { exported, failed, total: payload.items.length, outputDir: outputRoot };
   });
 
   ipcMain.handle('dialog:openProjectFile', async () => {

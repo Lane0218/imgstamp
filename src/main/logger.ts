@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 type LogLevel = 'INFO' | 'ERROR';
+const DEBUG_FLAG = '--debug';
+const DEBUG_ENV = 'IMGSTAMP_DEBUG';
 
 function resolveLogPath(): string {
   return path.join(app.getPath('userData'), 'imgstamp.log');
@@ -46,6 +48,17 @@ export function logInfo(message: string, detail?: unknown): void {
 
 export function logError(message: string, detail?: unknown): void {
   void writeLog('ERROR', message, detail);
+}
+
+export function isDebugLoggingEnabled(): boolean {
+  return process.argv.includes(DEBUG_FLAG) || process.env[DEBUG_ENV] === '1';
+}
+
+export function logDebug(message: string, detail?: unknown): void {
+  if (!isDebugLoggingEnabled()) {
+    return;
+  }
+  void writeLog('INFO', `DEBUG ${message}`, detail);
 }
 
 export function getLogPath(): string {

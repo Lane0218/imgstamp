@@ -2,13 +2,14 @@ import { app, BrowserWindow, ipcMain, nativeImage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { registerIpcHandlers } from './ipc';
-import { getLogPath, logError, logInfo } from './logger';
+import { getLogPath, isDebugLoggingEnabled, logDebug, logError, logInfo } from './logger';
 import { buildAppMenu, setWindowTitle } from './menu';
 
 let mainWindow: BrowserWindow | null = null;
 let launcherWindow: BrowserWindow | null = null;
 let pendingLaunchPayload: LaunchPayload | null = null;
 const isDev = !app.isPackaged;
+let debugHeartbeatTimer: NodeJS.Timeout | null = null;
 
 type LaunchPayload =
   | { type: 'create'; name: string; baseDir: string; projectPath: string }
@@ -172,12 +173,37 @@ const openMainWindow = (payload: LaunchPayload) => {
 };
 
 app.whenReady().then(() => {
-  logInfo('应用 ready', { logPath: getLogPath(), isPackaged: app.isPackaged });
+  logInfo('应用 ready', {
+    logPath: getLogPath(),
+    isPackaged: app.isPackaged,
+    debug: isDebugLoggingEnabled(),
+    argv: process.argv,
+  });
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.imgstamp.app');
   }
   registerIpcHandlers();
   launcherWindow = createLauncherWindow();
+
+  if (isDebugLoggingEnabled()) {
+    debugHeartbeatTimer = setInterval(() => {
+      const memory = process.memoryUsage();
+      logDebug('主进程心跳', {
+        rss: memory.rss,
+        heapTotal: memory.heapTotal,
+        heapUsed: memory.heapUsed,
+        external: memory.external,
+        arrayBuffers: memory.arrayBuffers,
+        windows: BrowserWindow.getAllWindows().map((window) => ({
+          title: window.getTitle(),
+          visible: window.isVisible(),
+          minimized: window.isMinimized(),
+          destroyed: window.isDestroyed(),
+          url: window.webContents.getURL(),
+        })),
+      });
+    }, 30_000);
+  }
 
   ipcMain.handle(
     'launcher:create-project',
@@ -241,6 +267,14 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  if (debugHeartbeatTimer) {
+    clearInterval(debugHeartbeatTimer);
+    debugHeartbeatTimer = null;
+  }
+  logInfo('应用即将退出');
 });
 
 process.on('uncaughtException', (error) => {

@@ -53,6 +53,7 @@ type ImgStampApi = {
   saveProject: (projectPath: string, data: unknown) => Promise<boolean>;
   loadProject: (projectPath: string) => Promise<unknown>;
   diagnosticLog: (message: string, detail?: unknown) => Promise<boolean>;
+  isDebugMode: () => Promise<boolean>;
   startExport: (
     baseDir: string,
     exportDir: string,
