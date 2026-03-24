@@ -5,6 +5,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import exifr from 'exifr';
+import { logError, logInfo } from './logger';
 import { setWindowTitle } from './menu';
 
 type SaveProjectPayload = {
@@ -759,6 +760,11 @@ async function upsertRecentProject(
 }
 
 export function registerIpcHandlers(): void {
+  ipcMain.handle('diagnostic:log', async (_event, message: string, detail?: unknown) => {
+    logInfo(`renderer:${message}`, detail);
+    return true;
+  });
+
   ipcMain.handle('recent:list', async () => readRecentProjects());
 
   ipcMain.handle(
@@ -821,8 +827,21 @@ export function registerIpcHandlers(): void {
     if (!baseDir) {
       throw new Error('baseDir 不能为空');
     }
-
-    return scanImages(baseDir);
+    const startedAt = Date.now();
+    logInfo('开始扫描目录', { baseDir });
+    try {
+      await fs.access(baseDir);
+      const result = await scanImages(baseDir);
+      logInfo('扫描目录完成', {
+        baseDir,
+        count: result.length,
+        durationMs: Date.now() - startedAt,
+      });
+      return result;
+    } catch (error) {
+      logError('扫描目录失败', { baseDir, durationMs: Date.now() - startedAt, error });
+      throw error;
+    }
   });
 
   ipcMain.handle(
@@ -1009,8 +1028,34 @@ export function registerIpcHandlers(): void {
     if (!projectPath) {
       throw new Error('projectPath 不能为空');
     }
-
-    const raw = await fs.readFile(projectPath, 'utf-8');
-    return JSON.parse(raw) as unknown;
+    const startedAt = Date.now();
+    logInfo('开始加载项目文件', { projectPath });
+    try {
+      await fs.access(projectPath);
+      const raw = await fs.readFile(projectPath, 'utf-8');
+      const project = JSON.parse(raw) as {
+        name?: string;
+        baseDir?: string | null;
+        photos?: unknown[];
+      };
+      if (!project?.baseDir) {
+        throw new Error('项目缺少基础目录');
+      }
+      await fs.access(project.baseDir);
+      logInfo('加载项目文件完成', {
+        projectPath,
+        baseDir: project.baseDir,
+        photoCount: Array.isArray(project.photos) ? project.photos.length : 0,
+        durationMs: Date.now() - startedAt,
+      });
+      return project as unknown;
+    } catch (error) {
+      logError('加载项目文件失败', {
+        projectPath,
+        durationMs: Date.now() - startedAt,
+        error,
+      });
+      throw error;
+    }
   });
 }

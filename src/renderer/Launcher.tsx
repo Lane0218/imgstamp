@@ -26,6 +26,7 @@ export function Launcher() {
   const [folderPath, setFolderPath] = useState('');
   const [projectFilePath, setProjectFilePath] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const canCreate = projectName.trim().length > 0 && folderPath && projectFilePath;
 
   useEffect(() => {
@@ -52,37 +53,57 @@ export function Launcher() {
   );
 
   const handleOpenProject = async () => {
-    const path = await window.imgstamp.openProjectFile();
-    if (!path) {
-      return;
+    setError(null);
+    try {
+      const path = await window.imgstamp.openProjectFile();
+      if (!path) {
+        return;
+      }
+      setIsSubmitting(true);
+      await window.imgstamp.diagnosticLog('launcher open project file', { path });
+      await window.imgstamp.launcherOpenProject(path);
+    } catch (openError) {
+      console.error(openError);
+      setError(openError instanceof Error ? openError.message : '打开项目失败');
+    } finally {
+      setIsSubmitting(false);
     }
-    await window.imgstamp.launcherOpenProject(path);
   };
 
   const handleBrowseFolder = async () => {
-    const dir = await window.imgstamp.openDirectory();
-    if (!dir) {
-      return;
+    try {
+      const dir = await window.imgstamp.openDirectory();
+      if (!dir) {
+        return;
+      }
+      setFolderPath(dir);
+      if (!projectName) {
+        setProjectName(getNameFromPath(dir));
+      }
+      setError(null);
+    } catch (browseError) {
+      console.error(browseError);
+      setError(browseError instanceof Error ? browseError.message : '选择文件夹失败');
     }
-    setFolderPath(dir);
-    if (!projectName) {
-      setProjectName(getNameFromPath(dir));
-    }
-    setError(null);
   };
 
   const handlePickProjectFile = async () => {
-    const defaultName = buildProjectFileName(projectName || getNameFromPath(folderPath) || '');
-    const filePath = await window.imgstamp.saveProjectFile(defaultName);
-    if (!filePath) {
-      return;
+    try {
+      const defaultName = buildProjectFileName(projectName || getNameFromPath(folderPath) || '');
+      const filePath = await window.imgstamp.saveProjectFile(defaultName);
+      if (!filePath) {
+        return;
+      }
+      setProjectFilePath(filePath);
+      if (!projectName) {
+        const name = getNameFromPath(filePath).replace(/\.json$/i, '') || '未命名项目';
+        setProjectName(name);
+      }
+      setError(null);
+    } catch (pickError) {
+      console.error(pickError);
+      setError(pickError instanceof Error ? pickError.message : '选择项目文件失败');
     }
-    setProjectFilePath(filePath);
-    if (!projectName) {
-      const name = getNameFromPath(filePath).replace(/\.json$/i, '') || '未命名项目';
-      setProjectName(name);
-    }
-    setError(null);
   };
 
   const handleCreateProject = async () => {
@@ -100,21 +121,42 @@ export function Launcher() {
       return;
     }
     setError(null);
-    await window.imgstamp.launcherCreateProject({
-      name,
-      baseDir: folderPath,
-      projectPath: projectFilePath,
-    });
+    setIsSubmitting(true);
+    try {
+      await window.imgstamp.diagnosticLog('launcher create project', {
+        name,
+        baseDir: folderPath,
+        projectPath: projectFilePath,
+      });
+      await window.imgstamp.launcherCreateProject({
+        name,
+        baseDir: folderPath,
+        projectPath: projectFilePath,
+      });
+    } catch (createError) {
+      console.error(createError);
+      setError(createError instanceof Error ? createError.message : '创建项目失败');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenRecent = async (item: RecentProject) => {
-    if (item.kind === 'project') {
-      await window.imgstamp.launcherOpenProject(item.path);
-      return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await window.imgstamp.diagnosticLog('launcher open recent', item);
+      if (item.kind === 'project') {
+        await window.imgstamp.launcherOpenProject(item.path);
+        return;
+      }
+      throw new Error('最近目录项目暂不支持直接打开，请通过项目文件进入');
+    } catch (openError) {
+      console.error(openError);
+      setError(openError instanceof Error ? openError.message : '打开最近项目失败');
+    } finally {
+      setIsSubmitting(false);
     }
-    const baseDir = item.baseDir || item.path;
-    const name = item.name || getNameFromPath(baseDir);
-    await window.imgstamp.launcherCreateProject({ name, baseDir });
   };
 
   return (
@@ -130,6 +172,7 @@ export function Launcher() {
                 type="button"
                 className="recent-item"
                 key={`${item.kind}:${item.path}`}
+                disabled={isSubmitting}
                 onClick={() => handleOpenRecent(item)}
               >
                 <div className="recent-item__name">{item.name}</div>
@@ -154,6 +197,7 @@ export function Launcher() {
               <div className="launcher-actions">
                 <button
                   className="btn btn--primary btn--hero btn--wide"
+                  disabled={isSubmitting}
                   onClick={() => setView('create')}
                 >
                   <span className="btn__icon" aria-hidden="true">
@@ -167,6 +211,7 @@ export function Launcher() {
                 </button>
                 <button
                   className="btn btn--primary btn--primary-soft btn--hero btn--wide"
+                  disabled={isSubmitting}
                   onClick={handleOpenProject}
                 >
                   <span className="btn__icon" aria-hidden="true">
@@ -181,7 +226,7 @@ export function Launcher() {
             </>
           ) : (
             <>
-              <button className="launcher-back" onClick={() => setView('home')}>
+              <button className="launcher-back" onClick={() => setView('home')} disabled={isSubmitting}>
                 ← 返回
               </button>
               <div className="launcher-card__title">创建项目</div>
@@ -210,7 +255,7 @@ export function Launcher() {
                       }}
                       placeholder="请选择包含图片的文件夹"
                     />
-                    <button className="btn" onClick={handleBrowseFolder}>
+                    <button className="btn" onClick={handleBrowseFolder} disabled={isSubmitting}>
                       浏览
                     </button>
                   </div>
@@ -227,7 +272,7 @@ export function Launcher() {
                       }}
                       placeholder="请选择项目文件保存位置"
                     />
-                    <button className="btn" onClick={handlePickProjectFile}>
+                    <button className="btn" onClick={handlePickProjectFile} disabled={isSubmitting}>
                       浏览
                     </button>
                   </div>
@@ -237,9 +282,9 @@ export function Launcher() {
                   <button
                     className="btn btn--primary"
                     onClick={handleCreateProject}
-                    disabled={!canCreate}
+                    disabled={!canCreate || isSubmitting}
                   >
-                    创建
+                    {isSubmitting ? '处理中...' : '创建'}
                   </button>
                 </div>
               </div>

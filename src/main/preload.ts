@@ -34,6 +34,8 @@ const api = {
     ipcRenderer.invoke('project:save', { projectPath, data }),
   loadProject: (projectPath: string) =>
     ipcRenderer.invoke('project:load', projectPath),
+  diagnosticLog: (message: string, detail?: unknown) =>
+    ipcRenderer.invoke('diagnostic:log', message, detail),
   startExport: (
     baseDir: string,
     exportDir: string,

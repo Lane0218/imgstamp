@@ -451,6 +451,11 @@ export function App() {
       options?: { projectName?: string; projectPath?: string },
     ) => {
       beginProjectLoad();
+      await window.imgstamp.diagnosticLog('app loadDirectory start', {
+        dir,
+        projectName: options?.projectName,
+        projectPath: options?.projectPath,
+      });
       try {
         const scanned = await window.imgstamp.scanImages(dir);
         const nextPhotos = scanned.map(toPhotoItem);
@@ -499,8 +504,14 @@ export function App() {
             baseDir: dir,
           });
         }
+        await window.imgstamp.diagnosticLog('app loadDirectory done', {
+          dir,
+          count: nextPhotos.length,
+          projectPath: options?.projectPath ?? null,
+        });
       } catch (error) {
         setStatusMessage('打开文件夹失败');
+        await window.imgstamp.diagnosticLog('app loadDirectory failed', { dir, error });
         console.error(error);
       } finally {
         finishProjectLoad();
@@ -509,6 +520,7 @@ export function App() {
 
     const loadProjectByPath = async (projectPath: string) => {
       beginProjectLoad();
+      await window.imgstamp.diagnosticLog('app loadProject start', { projectPath });
       try {
         const data = await window.imgstamp.loadProject(projectPath);
         const project = data as ProjectData;
@@ -544,11 +556,18 @@ export function App() {
             path: projectPath,
             baseDir: project.baseDir,
           });
+          await window.imgstamp.diagnosticLog('app loadProject done', {
+            projectPath,
+            baseDir: project.baseDir,
+            count: merged.length,
+          });
         } else {
           setStatusMessage('项目缺少基础目录');
+          await window.imgstamp.diagnosticLog('app loadProject missing baseDir', { projectPath });
         }
       } catch (error) {
         setStatusMessage('打开项目失败');
+        await window.imgstamp.diagnosticLog('app loadProject failed', { projectPath, error });
         console.error(error);
       } finally {
         finishProjectLoad();
@@ -561,6 +580,7 @@ export function App() {
         | { type: 'open-project'; projectPath: string }
         | null,
     ) => {
+      await window.imgstamp.diagnosticLog('app handleLaunchPayload', payload);
       if (!payload || launchHandledRef.current) {
         return;
       }
