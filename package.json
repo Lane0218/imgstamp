@@ -1,7 +1,7 @@
 {
   "name": "imgstamp",
   "productName": "ImgStamp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "个人离线照片整理工具，批量加白边与文字标注并导出成品图",
   "main": "dist/main/main.js",
   "private": true,
