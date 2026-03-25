@@ -36,6 +36,14 @@ type ProjectData = {
 type PageItem = number | 'ellipsis';
 
 type PreviewMode = 'final' | 'original';
+type ThumbnailStatus = 'loading' | 'loaded' | 'error';
+type ThumbnailSource = 'thumbnail' | 'original';
+type ThumbnailEntry = {
+  url: string | null;
+  status: ThumbnailStatus;
+  source: ThumbnailSource;
+  retryCount: number;
+};
 type ExportDialogState = {
   title: string;
   exported: number;
@@ -66,6 +74,7 @@ const ACTION_FEEDBACK_DURATION = 800;
 const STATUS_FEEDBACK_DURATION = 2600;
 const THUMB_FLASH_DURATION = 520;
 const THUMBNAIL_CACHE_LIMIT = 120;
+const THUMBNAIL_RETRY_LIMIT = 1;
 
 const normalizeMeta = (meta?: Partial<PhotoMeta>): PhotoMeta => ({
   date: meta?.date ?? null,
@@ -114,6 +123,16 @@ const getNameFromPath = (filePath: string | null): string | null => {
   return withoutExt || null;
 };
 
+const withCacheBust = (url: string, token: string | number) => {
+  try {
+    const nextUrl = new URL(url);
+    nextUrl.searchParams.set('thumb', String(token));
+    return nextUrl.toString();
+  } catch {
+    return url;
+  }
+};
+
 const EXPORT_SIZE_META: Record<
   '5' | '5L' | '6' | '6L',
   { label: string; ratio: string; cm: string }
@@ -146,7 +165,7 @@ export function App() {
   const [selectionAnchorIndex, setSelectionAnchorIndex] = useState<number | null>(null);
   const [pageSize, setPageSize] = useState(1);
   const [pageIndex, setPageIndex] = useState(0);
-  const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
+  const [thumbnailEntries, setThumbnailEntries] = useState<Record<string, ThumbnailEntry>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [sourceRefreshToken, setSourceRefreshToken] = useState(0);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
@@ -275,18 +294,31 @@ export function App() {
 
   const resetThumbnailCache = () => {
     thumbnailOrderRef.current = [];
-    setThumbnailUrls({});
+    thumbnailRefreshTokenRef.current = 0;
+    setThumbnailEntries({});
   };
 
-  const rememberThumbnailUrls = (entries: Array<{ id: string; url: string }>) => {
+  const rememberThumbnailUrls = (
+    entries: Array<{
+      id: string;
+      url: string;
+      source?: ThumbnailSource;
+      retryCount?: number;
+    }>,
+  ) => {
     if (entries.length === 0) {
       return;
     }
-    setThumbnailUrls((prev) => {
+    setThumbnailEntries((prev) => {
       const next = { ...prev };
       const order = thumbnailOrderRef.current.filter((id) => id in next);
-      entries.forEach(({ id, url }) => {
-        next[id] = url;
+      entries.forEach(({ id, url, source = 'thumbnail', retryCount = 0 }) => {
+        next[id] = {
+          url,
+          status: 'loading',
+          source,
+          retryCount,
+        };
         const existingIndex = order.indexOf(id);
         if (existingIndex >= 0) {
           order.splice(existingIndex, 1);
@@ -302,6 +334,143 @@ export function App() {
       thumbnailOrderRef.current = order;
       return next;
     });
+  };
+
+  const markThumbnailLoaded = (id: string, url: string) => {
+    setThumbnailEntries((prev) => {
+      const current = prev[id];
+      if (!current || current.url !== url || current.status === 'loaded') {
+        return prev;
+      }
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          status: 'loaded',
+        },
+      };
+    });
+  };
+
+  const markThumbnailFailed = (id: string, url: string) => {
+    setThumbnailEntries((prev) => {
+      const current = prev[id];
+      if (!current || current.url !== url || current.status === 'error') {
+        return prev;
+      }
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          status: 'error',
+        },
+      };
+    });
+  };
+
+  const fallbackThumbnailToOriginal = (photo: PhotoItem, expectedUrl: string, retryCount: number) => {
+    const fallbackUrl = withCacheBust(photo.fileUrl, `original-${Date.now()}`);
+    setThumbnailEntries((prev) => {
+      const current = prev[photo.id];
+      if (!current || current.url !== expectedUrl) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [photo.id]: {
+          url: fallbackUrl,
+          status: 'loading',
+          source: 'original',
+          retryCount,
+        },
+      };
+    });
+  };
+
+  const retryThumbnail = async (photo: PhotoItem, nextRetryCount: number) => {
+    if (!window.imgstamp || !baseDir) {
+      return;
+    }
+    setThumbnailEntries((prev) => {
+      const current = prev[photo.id];
+      if (!current || current.source !== 'thumbnail') {
+        return prev;
+      }
+      return {
+        ...prev,
+        [photo.id]: {
+          ...current,
+          url: null,
+          status: 'loading',
+          retryCount: nextRetryCount,
+        },
+      };
+    });
+
+    try {
+      const url = await window.imgstamp.getThumbnail(baseDir, photo.relativePath, 256);
+      if (!url) {
+        throw new Error('empty thumbnail url');
+      }
+      const bustedUrl = withCacheBust(url, `retry-${photo.id}-${nextRetryCount}-${Date.now()}`);
+      setThumbnailEntries((prev) => {
+        const current = prev[photo.id];
+        if (
+          !current ||
+          current.source !== 'thumbnail' ||
+          current.retryCount !== nextRetryCount ||
+          current.url !== null
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [photo.id]: {
+            ...current,
+            url: bustedUrl,
+            status: 'loading',
+          },
+        };
+      });
+    } catch {
+      // 回退到原图，避免缩略图区域长期空白。
+      setThumbnailEntries((prev) => {
+        const current = prev[photo.id];
+        if (
+          !current ||
+          current.source !== 'thumbnail' ||
+          current.retryCount !== nextRetryCount ||
+          current.url !== null
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [photo.id]: {
+            url: withCacheBust(photo.fileUrl, `original-${Date.now()}`),
+            status: 'loading',
+            source: 'original',
+            retryCount: nextRetryCount,
+          },
+        };
+      });
+    }
+  };
+
+  const handleThumbnailError = (photo: PhotoItem, failedUrl: string) => {
+    const entry = thumbnailEntries[photo.id];
+    if (!entry || entry.url !== failedUrl) {
+      return;
+    }
+    if (entry.source === 'thumbnail') {
+      if (entry.retryCount < THUMBNAIL_RETRY_LIMIT) {
+        void retryThumbnail(photo, entry.retryCount + 1);
+        return;
+      }
+      fallbackThumbnailToOriginal(photo, failedUrl, entry.retryCount);
+      return;
+    }
+    markThumbnailFailed(photo.id, failedUrl);
   };
 
   const getActionLabel = (key: ActionKey) => actionFeedback[key]?.label ?? ACTION_LABELS[key];
@@ -990,7 +1159,7 @@ export function App() {
       const shouldRefreshVisible = thumbnailRefreshTokenRef.current !== sourceRefreshToken;
       const pending = shouldRefreshVisible
         ? visiblePhotos
-        : visiblePhotos.filter((photo) => !thumbnailUrls[photo.id]);
+        : visiblePhotos.filter((photo) => !thumbnailEntries[photo.id]);
       if (pending.length === 0) {
         if (shouldRefreshVisible) {
           thumbnailRefreshTokenRef.current = sourceRefreshToken;
@@ -1002,6 +1171,7 @@ export function App() {
         const results = await Promise.all(
           pending.map(async (photo) => ({
             id: photo.id,
+            fileUrl: photo.fileUrl,
             url: await window.imgstamp.getThumbnail(baseDir, photo.relativePath, 256),
           })),
         );
@@ -1010,7 +1180,18 @@ export function App() {
           return;
         }
 
-        rememberThumbnailUrls(results.filter((item) => Boolean(item.url)));
+        rememberThumbnailUrls(
+          results.map((item) =>
+            item.url
+              ? { id: item.id, url: item.url, source: 'thumbnail', retryCount: 0 }
+              : {
+                  id: item.id,
+                  url: withCacheBust(item.fileUrl, `original-${item.id}-${Date.now()}`),
+                  source: 'original',
+                  retryCount: 0,
+                },
+          ),
+        );
         if (shouldRefreshVisible) {
           thumbnailRefreshTokenRef.current = sourceRefreshToken;
         }
@@ -1024,7 +1205,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [visiblePhotos, baseDir, thumbnailUrls, sourceRefreshToken]);
+  }, [visiblePhotos, baseDir, thumbnailEntries, sourceRefreshToken]);
 
   useEffect(() => {
     if (!window.imgstamp || !baseDir) {
@@ -1472,6 +1653,11 @@ export function App() {
               const isMultiSelected = multiSelectedSet.has(item.id);
               const isActive = item.id === currentPhotoId;
               const isFlashing = flashIds.has(item.id);
+              const thumbnailEntry = thumbnailEntries[item.id];
+              const thumbnailSrc = thumbnailEntry?.url;
+              const thumbnailLoaded = thumbnailEntry?.status === 'loaded';
+              const thumbnailFailed = thumbnailEntry?.status === 'error';
+              const thumbnailLabel = thumbnailFailed ? '图片加载失败' : '缩略图加载中';
               return (
                 <button
                   type="button"
@@ -1502,7 +1688,26 @@ export function App() {
                         );
                       }}
                     />
-                    <img src={thumbnailUrls[item.id] ?? item.fileUrl} alt={item.filename} loading="lazy" />
+                    {thumbnailSrc ? (
+                      <img
+                        src={thumbnailSrc}
+                        alt={item.filename}
+                        loading="lazy"
+                        className={thumbnailLoaded ? '' : 'thumb-frame__image--hidden'}
+                        onLoad={() => markThumbnailLoaded(item.id, thumbnailSrc)}
+                        onError={() => {
+                          handleThumbnailError(item, thumbnailSrc);
+                        }}
+                      />
+                    ) : null}
+                    {!thumbnailLoaded ? (
+                      <div
+                        className={`thumb-placeholder ${thumbnailFailed ? 'thumb-placeholder--error' : ''}`}
+                        aria-label={thumbnailLabel}
+                      >
+                        <span>{thumbnailFailed ? '加载失败' : '加载中'}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </button>
               );

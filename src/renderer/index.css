@@ -543,6 +543,45 @@ select {
   border-radius: 4px;
 }
 
+.thumb-frame__image--hidden {
+  opacity: 0;
+}
+
+.thumb-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(245, 236, 225, 0.92)),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(222, 212, 198, 0.16),
+      rgba(222, 212, 198, 0.16) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  color: #9b8f82;
+  font-size: 12px;
+  letter-spacing: 0.2px;
+  text-align: center;
+}
+
+.thumb-placeholder--error {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 244, 0.94), rgba(250, 232, 212, 0.96)),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(201, 122, 51, 0.12),
+      rgba(201, 122, 51, 0.12) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  color: #a45a28;
+}
+
 .thumb-select {
   position: absolute;
   top: 8px;
