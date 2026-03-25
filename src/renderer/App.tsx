@@ -148,6 +148,7 @@ export function App() {
   const [pageIndex, setPageIndex] = useState(0);
   const [thumbnailUrls, setThumbnailUrls] = useState<Record<string, string>>({});
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [sourceRefreshToken, setSourceRefreshToken] = useState(0);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('original');
   const [zoom, setZoom] = useState(1);
   const [columnSizes, setColumnSizes] = useState({ left: MIN_LEFT_WIDTH, right: MIN_RIGHT_WIDTH });
@@ -183,6 +184,7 @@ export function App() {
   const transientTimerRef = useRef<number | null>(null);
   const flashTimersRef = useRef<Map<string, { token: number; timeoutId: number }>>(new Map());
   const thumbnailOrderRef = useRef<string[]>([]);
+  const thumbnailRefreshTokenRef = useRef(0);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const sizesInitialized = useRef(false);
@@ -198,6 +200,25 @@ export function App() {
 
   const apiAvailable = useMemo(() => Boolean(window.imgstamp), []);
   const statusText = apiAvailable ? (transientMessage ?? statusMessage) : '预加载未就绪';
+
+  useEffect(() => {
+    const refreshSourceState = () => {
+      setSourceRefreshToken((prev) => prev + 1);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshSourceState();
+      }
+    };
+
+    window.addEventListener('focus', refreshSourceState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', refreshSourceState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const pushTransientMessage = (message: string, duration = STATUS_FEEDBACK_DURATION) => {
     setTransientMessage(message);
@@ -966,8 +987,14 @@ export function App() {
     let cancelled = false;
 
     const loadThumbnails = async () => {
-      const pending = visiblePhotos.filter((photo) => !thumbnailUrls[photo.id]);
+      const shouldRefreshVisible = thumbnailRefreshTokenRef.current !== sourceRefreshToken;
+      const pending = shouldRefreshVisible
+        ? visiblePhotos
+        : visiblePhotos.filter((photo) => !thumbnailUrls[photo.id]);
       if (pending.length === 0) {
+        if (shouldRefreshVisible) {
+          thumbnailRefreshTokenRef.current = sourceRefreshToken;
+        }
         return;
       }
 
@@ -984,6 +1011,9 @@ export function App() {
         }
 
         rememberThumbnailUrls(results.filter((item) => Boolean(item.url)));
+        if (shouldRefreshVisible) {
+          thumbnailRefreshTokenRef.current = sourceRefreshToken;
+        }
       } catch (error) {
         console.error(error);
       }
@@ -994,7 +1024,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [visiblePhotos, baseDir, thumbnailUrls]);
+  }, [visiblePhotos, baseDir, thumbnailUrls, sourceRefreshToken]);
 
   useEffect(() => {
     if (!window.imgstamp || !baseDir) {
@@ -1094,6 +1124,7 @@ export function App() {
     currentPhoto?.meta.descriptionSkipped,
     exportSize,
     previewMode,
+    sourceRefreshToken,
   ]);
 
   const updateCurrentMeta = (partial: Partial<PhotoMeta>) => {

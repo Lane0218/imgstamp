@@ -69,6 +69,7 @@ type Layout = {
   textArea: { x: number; y: number; width: number; height: number };
 };
 type SourceInfo = { width: number; height: number };
+type SourceFileState = { sourcePath: string; mtimeMs: number; size: number; version: string };
 type Typography = { fontSize: number; paddingX: number; paddingY: number };
 type Bounds = { x: number; y: number; width: number; height: number };
 type TextRun = { text: string; script: 'cjk' | 'latin' };
@@ -197,10 +198,30 @@ function formatExifDate(value: Date | string | number | null | undefined): strin
   return `${year}-${month}-${day}`;
 }
 
+function isOrientationTransposed(orientation: number | undefined): boolean {
+  return orientation === 5 || orientation === 6 || orientation === 7 || orientation === 8;
+}
+
+async function getSourceFileState(baseDir: string, relativePath: string): Promise<SourceFileState> {
+  const sourcePath = path.join(baseDir, relativePath);
+  const stat = await fs.stat(sourcePath);
+  const mtimeMs = Math.floor(stat.mtimeMs);
+  const size = stat.size;
+  return {
+    sourcePath,
+    mtimeMs,
+    size,
+    version: `${mtimeMs}-${size}`,
+  };
+}
+
 async function readSourceInfo(sourcePath: string): Promise<SourceInfo | null> {
   try {
     const metadata = await sharp(sourcePath).metadata();
     if (metadata.width && metadata.height) {
+      if (isOrientationTransposed(metadata.orientation)) {
+        return { width: metadata.height, height: metadata.width };
+      }
       return { width: metadata.width, height: metadata.height };
     }
   } catch {
@@ -618,12 +639,14 @@ async function buildStampedImage(
     const typography = getTypography(canvasSize);
     imageRect = resolveImageRect(sourceInfo, layout, typography.fontSize);
     resized = await sharp(sourcePath)
+      .rotate()
       .resize(imageRect.width, imageRect.height, {
         fit: 'fill',
       })
       .toBuffer();
   } else {
     resized = await sharp(sourcePath)
+      .rotate()
       .resize(layout.imageArea.width, layout.imageArea.height, {
         fit: 'contain',
         background: '#ffffff',
@@ -689,20 +712,29 @@ function toFileUrl(targetPath: string): string {
   return pathToFileURL(targetPath).toString();
 }
 
+function toVersionedFileUrl(targetPath: string, version: string): string {
+  const url = new URL(pathToFileURL(targetPath).toString());
+  url.searchParams.set('v', version);
+  return url.toString();
+}
+
 async function getThumbnailPath(
   baseDir: string,
   relativePath: string,
   size: number,
-): Promise<{ sourcePath: string; thumbPath: string }> {
+): Promise<{ sourceState: SourceFileState; thumbPath: string }> {
   const cacheDir = path.join(app.getPath('userData'), 'imgstamp-cache');
   await fs.mkdir(cacheDir, { recursive: true });
-  const key = createHash('sha1').update(`${baseDir}|${relativePath}|${size}|v2`).digest('hex');
+  const sourceState = await getSourceFileState(baseDir, relativePath);
+  const key = createHash('sha1')
+    .update(`${baseDir}|${relativePath}|${sourceState.version}|${size}|v3`)
+    .digest('hex');
   const thumbPath = path.join(cacheDir, `${key}.jpg`);
-  const sourcePath = path.join(baseDir, relativePath);
-  return { sourcePath, thumbPath };
+  return { sourceState, thumbPath };
 }
 
 async function getPreviewPath(
+  sourceState: SourceFileState,
   baseDir: string,
   relativePath: string,
   meta: { date: string | null; location: string; description: string },
@@ -715,9 +747,10 @@ async function getPreviewPath(
       JSON.stringify({
         baseDir,
         relativePath,
+        sourceVersion: sourceState.version,
         meta,
         options,
-        version: 'preview-v1',
+        version: 'preview-v2',
       }),
     )
     .digest('hex');
@@ -912,7 +945,7 @@ export function registerIpcHandlers(): void {
       const operation = beginOperation('thumbnail', { baseDir, relativePath, size });
 
       const safeSize = Number.isFinite(size) && size > 0 ? Math.floor(size) : 256;
-      const { sourcePath, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
+      const { sourceState, thumbPath } = await getThumbnailPath(baseDir, relativePath, safeSize);
       try {
         const cached = await fs.readFile(thumbPath);
         try {
@@ -928,7 +961,8 @@ export function registerIpcHandlers(): void {
       }
 
       try {
-        const buffer = await sharp(sourcePath)
+        const buffer = await sharp(sourceState.sourcePath)
+          .rotate()
           .resize(safeSize, safeSize, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 80 })
           .toBuffer();
@@ -936,9 +970,12 @@ export function registerIpcHandlers(): void {
         endOperation('thumbnail', operation, { cached: false, safeSize, outputBytes: buffer.length });
         return toFileUrl(thumbPath);
       } catch (error) {
-        failOperation('thumbnail', operation, error, { sourcePath, safeSize });
+        failOperation('thumbnail', operation, error, {
+          sourcePath: sourceState.sourcePath,
+          safeSize,
+        });
         try {
-          return toFileUrl(sourcePath);
+          return toVersionedFileUrl(sourceState.sourcePath, sourceState.version);
         } catch (readError) {
           console.error(readError);
           return '';
@@ -976,20 +1013,30 @@ export function registerIpcHandlers(): void {
       if (!baseDir || !relativePath) {
         throw new Error('参数不能为空');
       }
-      const sourcePath = path.join(baseDir, relativePath);
       const operation = beginOperation('preview', { baseDir, relativePath, options });
       try {
+        const sourceState = await getSourceFileState(baseDir, relativePath);
         if (options.mode === 'original') {
-          endOperation('preview', operation, { mode: options.mode, sourcePath, cached: 'source' });
-          return toFileUrl(sourcePath);
+          endOperation('preview', operation, {
+            mode: options.mode,
+            sourcePath: sourceState.sourcePath,
+            cached: 'source',
+          });
+          return toVersionedFileUrl(sourceState.sourcePath, sourceState.version);
         }
-        const { previewPath, previewDir } = await getPreviewPath(baseDir, relativePath, meta, options);
+        const { previewPath, previewDir } = await getPreviewPath(
+          sourceState,
+          baseDir,
+          relativePath,
+          meta,
+          options,
+        );
         try {
           await fs.access(previewPath);
           endOperation('preview', operation, { mode: options.mode, previewPath, cached: true });
           return toFileUrl(previewPath);
         } catch {
-          const buffer = await buildPreviewImage(sourcePath, meta, options);
+          const buffer = await buildPreviewImage(sourceState.sourcePath, meta, options);
           await writeFileAtomic(previewPath, buffer);
           await pruneCacheDir(previewDir, 120);
           endOperation('preview', operation, {
@@ -1001,6 +1048,7 @@ export function registerIpcHandlers(): void {
           return toFileUrl(previewPath);
         }
       } catch (error) {
+        const sourcePath = path.join(baseDir, relativePath);
         failOperation('preview', operation, error, { sourcePath, options });
         return '';
       }
